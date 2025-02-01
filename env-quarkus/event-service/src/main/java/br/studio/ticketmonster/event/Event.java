@@ -3,6 +3,7 @@ package br.studio.ticketmonster.event;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import br.studio.ticketmonster.infra.Default;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 
@@ -23,6 +24,7 @@ public class Event extends PanacheEntity {
     public Event() {
     }
 
+    @Default
     public Event(String name, String description, String category, LocalDate startDate, LocalDate endDate,
             String location,
             String imageUrl) {

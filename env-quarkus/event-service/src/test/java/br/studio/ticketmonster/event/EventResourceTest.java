@@ -1,14 +1,13 @@
 package br.studio.ticketmonster.event;
 
+import static io.restassured.RestAssured.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static io.restassured.RestAssured.given;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,8 +43,6 @@ public class EventResourceTest {
         when(uriInfo.getAbsolutePathBuilder()).thenReturn(uriBuilder);
         when(uriBuilder.path("1")).thenReturn(uriBuilder);
         when(uriBuilder.build()).thenReturn(location);
-
-        EventResource resource = new EventResource(eventService);
 
         given()
                 .contentType("application/json")

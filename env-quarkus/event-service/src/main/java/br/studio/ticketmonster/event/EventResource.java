@@ -19,7 +19,7 @@ import jakarta.ws.rs.core.UriInfo;
 @Consumes(MediaType.APPLICATION_JSON)
 public class EventResource {
 
-    private EventService eventService;
+    EventService eventService;
 
     public EventResource(EventService eventService) {
         this.eventService = eventService;
