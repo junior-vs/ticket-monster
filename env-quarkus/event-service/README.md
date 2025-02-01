@@ -1,5 +1,32 @@
 # event-service
 
+## Quarkus cli extention
+
+### search
+```shell script
+quarkus ext list --concise -i -s jdbc
+```
+
+### add
+```shell script
+quarkus ext add jacoco health
+```
+### remove
+```shell script
+quarkus ext rm kubernetes
+```
+--------
+
+## Running sonar
+```shell script
+mvn clean verify sonar:sonar -Dsonar.login=myAuthenticationToken
+```
+
+```shell script
+mvn clean verify sonar:sonar -Dsonar.login="sqa_8be05e95d266a722f843139d6911d1ef9438a1f0"
+```
+----
+
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
