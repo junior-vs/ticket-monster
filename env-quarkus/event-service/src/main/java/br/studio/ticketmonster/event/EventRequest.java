@@ -15,16 +15,4 @@ public record EventRequest(
         String location,
         String imageUrl) {
 
-    /*
-     * {
-     * "name": "Rock in Rio",
-     * "description": "Maior festival de música do Brasil",
-     * "category": "Música",
-     * "startDate": "2025-09-27T20:00:00",
-     * "endDate": "2025-09-30T23:59:59",
-     * "location": "Rio de Janeiro",
-     * "imageUrl": "https://example.com/rockinrio.jpg"
-     * }
-     */
-
 }

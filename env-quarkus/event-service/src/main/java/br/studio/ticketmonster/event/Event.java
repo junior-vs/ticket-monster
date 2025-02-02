@@ -1,6 +1,7 @@
 package br.studio.ticketmonster.event;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import br.studio.ticketmonster.infra.Default;
@@ -20,6 +21,8 @@ public class Event extends PanacheEntity {
     private String location;
     private String imageUrl;
     private UUID uuid;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public Event() {
     }
@@ -36,6 +39,8 @@ public class Event extends PanacheEntity {
         this.location = location;
         this.imageUrl = imageUrl;
         this.uuid = UUID.randomUUID();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public String getName() {
@@ -74,6 +79,7 @@ public class Event extends PanacheEntity {
         this.endDate = event.endDate;
         this.location = event.location;
         this.imageUrl = event.imageUrl;
+        this.updatedAt = LocalDateTime.now();
     }
 
  
