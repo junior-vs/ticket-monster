@@ -66,6 +66,16 @@ public class Event extends PanacheEntity {
         return imageUrl;
     }
 
+    public void update(Event event) {
+        this.name = event.name;
+        this.description = event.description;
+        this.category = event.category;
+        this.startDate = event.startDate;
+        this.endDate = event.endDate;
+        this.location = event.location;
+        this.imageUrl = event.imageUrl;
+    }
+
  
     @Override
     public String toString() {
