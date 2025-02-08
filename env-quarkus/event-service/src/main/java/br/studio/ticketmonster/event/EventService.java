@@ -52,19 +52,19 @@ public class EventService {
                 .map(eventMapper::toResponse);
     }
 
-    public Uni<EventResponse> findById(Long id) {
-        return eventRepository.findById(id)
+    public Uni<EventResponse> findByIdWithMediaItems(Long id) {
+        return eventRepository.findByIdWithMediaItems(id)
                 .onItem().ifNull().failWith(new NotFoundException("Event with id " + id + " does not exist"))
                 .map(eventMapper::toResponse);
     }
 
-    public Uni<List<EventResponse>> list(int pageIndex, int pageSize) {
+    public Uni<List<EventSimpleResponse>> list(int pageIndex, int pageSize) {
 
         return eventRepository.findAll(Sort.by("id", Direction.Ascending))
                 .page(Page.of(pageIndex, pageSize))
                 .list()
                 .map(events -> events.stream()
-                        .map(eventMapper::toResponse)
+                        .map(eventMapper::toSimpleResponse)
                         .collect(Collectors.toList()));
     }
 

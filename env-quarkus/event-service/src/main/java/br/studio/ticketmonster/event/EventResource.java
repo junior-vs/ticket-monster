@@ -55,7 +55,7 @@ public class EventResource {
     @GET
     @Path("/{id}")
     public Uni<RestResponse<EventResponse>> findById(Long id) {
-        return eventService.findById(id)
+        return eventService.findByIdWithMediaItems(id)
                 .map(response -> {
                     if (response == null) {
                         return RestResponse.notFound();
@@ -73,7 +73,7 @@ public class EventResource {
      * @return a REST response with the list of events
      */
     @GET
-    public Uni<RestResponse<List<EventResponse>>> list(@QueryParam("page") @DefaultValue("0") int pageIndex,
+    public Uni<RestResponse<List<EventSimpleResponse>>> list(@QueryParam("page") @DefaultValue("0") int pageIndex,
             @QueryParam("size") @DefaultValue("20") int pageSize) {
         return eventService.list(pageIndex, pageSize)
                 .map(response -> {

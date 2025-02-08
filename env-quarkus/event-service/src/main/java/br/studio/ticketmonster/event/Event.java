@@ -14,9 +14,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 
 @Entity
+
+// search event by id and bring event with media items and category
+@NamedQuery(name = "Event.findByIdWithMediaItems", query = "SELECT e FROM Event e LEFT JOIN FETCH e.mediaItems JOIN e.category  WHERE e.id = :id")
 public class Event extends PanacheEntity {
 
     private String name;

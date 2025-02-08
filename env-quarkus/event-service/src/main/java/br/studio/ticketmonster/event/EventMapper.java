@@ -1,5 +1,7 @@
 package br.studio.ticketmonster.event;
 
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -19,6 +21,11 @@ public interface EventMapper {
      */   
     @Mapping(target = "mediaItems", source = "event.mediaItems") 
     EventResponse toResponse(Event event);
+
+    @Mapping(target = "category", source = "event.category.name")
+    EventSimpleResponse toSimpleResponse(Event event);
+
+    List<EventResponse> toResponse(List<Event> events);
 
     /**
      * Updates an existing Event entity with values from another Event entity.
@@ -42,6 +49,7 @@ public interface EventMapper {
     @Mapping(target = "category", source = "eventCategory")
     @Mapping(target = "mediaItems", ignore = true)
     @Mapping(target = "description", source = "eventRequest.description")
+    @Mapping(target = "name", source = "eventRequest.name")
     Event toEntity(EventRequest eventRequest, EventCategory eventCategory);
 
 
