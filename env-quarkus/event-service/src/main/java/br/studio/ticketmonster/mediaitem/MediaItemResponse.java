@@ -1,8 +1,8 @@
-package br.studio.ticketmonster.midiaitem;
+package br.studio.ticketmonster.mediaitem;
 
 import java.time.LocalDateTime;
 
-public record MidiaItemResponse(
+public record MediaItemResponse(
         Long id,
         MediaType mediaType,
         String url,

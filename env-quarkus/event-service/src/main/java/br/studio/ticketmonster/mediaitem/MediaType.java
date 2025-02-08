@@ -1,4 +1,4 @@
-package br.studio.ticketmonster.midiaitem;
+package br.studio.ticketmonster.mediaitem;
 
 public enum MediaType {
 

@@ -6,7 +6,6 @@ import br.studio.ticketmonster.infra.Default;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.validation.constraints.NotEmpty;
 
 @Entity
 public class EventCategory extends PanacheEntity {

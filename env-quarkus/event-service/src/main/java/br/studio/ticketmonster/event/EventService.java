@@ -3,20 +3,22 @@ package br.studio.ticketmonster.event;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import br.studio.ticketmonster.category.EventCategory;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.Sort.Direction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.NotFoundException;
 
 @ApplicationScoped
 @WithTransaction
 public class EventService {
 
-    EventMapper eventMapper;
-    EventRepository eventRepository;
+    final EventMapper eventMapper;
+    final EventRepository eventRepository;
 
     public EventService(EventMapper eventMapper, EventRepository eventRepository) {
         this.eventMapper = eventMapper;
@@ -26,16 +28,28 @@ public class EventService {
     /**
      * Create an event
      * 
-     * @param event
-     * @return
+     * 
      */
 
-    public Uni<EventResponse> createEvent(EventRequest event) {
-        return Uni.createFrom()
-                .item(event) // Start with EventRequest
-                .map(eventMapper::toEntity) // Transform to Entity
-                .chain(eventRepository::persist) // Persist entity
-                .map(eventMapper::toResponse); // Transform to Response
+    /**
+     * Creates a new event based on the provided event request.
+     *
+     * @param eventRequest the request object containing event details
+     * @return a Uni containing the response object for the created event
+     * @throws NotFoundException if the category with the specified ID does not exist
+     */
+    public Uni<EventResponse> createEvent(@Valid EventRequest eventRequest) {
+
+        return Uni.createFrom().item(() -> EventCategory.findById(eventRequest.categoryId()))
+                .onItem().ifNull()
+                .failWith(new NotFoundException("Category with id " + eventRequest.categoryId() + " does not exist"))
+                .map(EventCategory.class::cast)
+                .map(eventCategory -> {
+                    var event = eventMapper.toEntity(eventRequest, eventCategory);
+                    return event;
+                })
+                .chain(eventRepository::persist)
+                .map(eventMapper::toResponse);
     }
 
     public Uni<EventResponse> findById(Long id) {
@@ -58,9 +72,10 @@ public class EventService {
 
         return eventRepository.findById(id)
                 .onItem().ifNull().failWith(new NotFoundException("Event with id " + id + " does not exist"))
+                .map(Event.class::cast)
                 .map(existingEvent -> {
-                    Event input = eventMapper.toEntity(eventRequest);
-                    eventMapper.updatEvent(input, existingEvent);
+                    Event input = eventMapper.toEntity(eventRequest);                    
+                    eventMapper.updateEvent(input, existingEvent);
                     return existingEvent;
                 })
                 .chain(eventRepository::persistAndFlush)
