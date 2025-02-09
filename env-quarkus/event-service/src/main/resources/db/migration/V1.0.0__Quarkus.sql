@@ -22,9 +22,12 @@ CREATE TABLE public."event" (
     updatedat timestamp(6) NULL,
     "uuid" uuid NULL,
     description varchar(255) NULL,
+    status varchar(255) NOT NULL,
     "location" varchar(255) NULL,
     "name" varchar(255) NULL,
     CONSTRAINT event_pkey PRIMARY KEY (id),
+    CONSTRAINT event_uuid_key UNIQUE ("uuid"),
+    CONSTRAINT event_status_check CHECK (((status)::text = ANY ((ARRAY['PLANNED'::character varying, 'ONGOING'::character varying, 'COMPLETED'::character varying, 'CANCELLED'::character varying])::text[]))),
     CONSTRAINT fk8csjtmgirbl21kpwsxo6x66nh FOREIGN KEY (category_id) REFERENCES public.eventcategory(id)
 );
 -- public.mediaitem definition
@@ -53,12 +56,12 @@ INSERT INTO public.eventcategory (id, name, description, createdat, updatedat) V
 (5, 'Workshop', 'Categoria de Workshops', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert events
-INSERT INTO public.event (id, name, description, location, startdate, enddate, category_id, createdat, updatedat, uuid) VALUES
-(1, 'Festival de Jazz', 'Festival internacional de jazz com artistas renomados', 'Teatro Municipal', '2025-03-15', '2025-03-17', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
-(2, 'Arte Moderna', 'Exposição de arte moderna contemporânea', 'Museu de Arte', '2025-04-01', '2025-04-30', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
-(3, 'Sabores do Mundo', 'Festival com pratos típicos de diversos países', 'Centro de Convenções', '2025-05-10', '2025-05-12', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
-(4, 'Tech Summit 2025', 'Conferência sobre tecnologias emergentes', 'Centro Empresarial', '2025-06-20', '2025-06-22', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
-(5, 'Workshop de Fotografia', 'Aprenda técnicas avançadas de fotografia', 'Estúdio Central', '2025-07-05', '2025-07-05', 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid());
+INSERT INTO public.event (id, name, description, status, location, startdate, enddate, category_id, createdat, updatedat, uuid) VALUES
+(1, 'Festival de Jazz', 'Festival internacional de jazz com artistas renomados', 'PLANNED', 'Teatro Municipal', '2025-03-15', '2025-03-17', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
+(2, 'Arte Moderna', 'Exposição de arte moderna contemporânea', 'COMPLETED', 'Museu de Arte', '2025-04-01', '2025-04-30', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
+(3, 'Sabores do Mundo', 'Festival com pratos típicos de diversos países', 'ONGOING', 'Centro de Convenções', '2025-05-10', '2025-05-12', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
+(4, 'Tech Summit 2025', 'Conferência sobre tecnologias emergentes', 'PLANNED', 'Centro Empresarial', '2025-06-20', '2025-06-22', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid()),
+(5, 'Workshop de Fotografia', 'Aprenda técnicas avançadas de fotografia', 'PLANNED', 'Estúdio Central', '2025-07-05', '2025-07-05', 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, gen_random_uuid());
 
 -- Insert media items
 INSERT INTO public.mediaitem (id, description, mediatype, url, event_id, createdat, updatedat) VALUES

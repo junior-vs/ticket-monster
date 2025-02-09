@@ -11,6 +11,8 @@ import br.studio.ticketmonster.mediaitem.MediaItem;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -25,7 +27,10 @@ public class Event extends PanacheEntity {
 
     private String name;
     private String description;
-    
+
+    @Enumerated(EnumType.STRING)
+    private StatusEventEnum status;
+
     private LocalDate startDate;
     private LocalDate endDate;
     private String location;
@@ -33,7 +38,6 @@ public class Event extends PanacheEntity {
     private UUID uuid;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
@@ -46,13 +50,14 @@ public class Event extends PanacheEntity {
     }
 
     @Default
-    public Event(String name, String description, LocalDate startDate, LocalDate endDate, String location, EventCategory category) {
+    public Event(String name, String description, LocalDate startDate, LocalDate endDate, String location,
+            EventCategory category) {
         this.name = name;
         this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
         this.location = location;
-        this.category = category;        
+        this.category = category;
         this.uuid = UUID.randomUUID();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
@@ -72,8 +77,6 @@ public class Event extends PanacheEntity {
         mediaItems.add(mediaItem);
         mediaItem.setEvent(this);
     }
-
-    
 
     public String getName() {
         return name;
@@ -114,8 +117,6 @@ public class Event extends PanacheEntity {
     public List<MediaItem> getMediaItems() {
         return mediaItems;
     }
-
-
 
     @Override
     public String toString() {

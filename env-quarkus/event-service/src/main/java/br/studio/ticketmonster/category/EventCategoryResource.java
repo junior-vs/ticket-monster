@@ -4,8 +4,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
-
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
@@ -26,6 +31,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
 
 //Crud Resource for EventCategory
+@Tag(name = "EventCategory", description = "EventCategory CRUD operations")
 @Path("/event-categories")
 @WithTransaction
 @Produces(MediaType.APPLICATION_JSON)
@@ -38,6 +44,11 @@ public class EventCategoryResource {
         this.eventCategoryMapper = eventCategoryMapper;
     }
 
+    // OpenAPI Annotations
+    @Operation(summary = "Create a new EventCategory")
+    @APIResponse(responseCode = "201", description = "EventCategory created")
+    @APIResponse(responseCode = "400", description = "Invalid input")
+    @APIResponse(responseCode = "409", description = "EventCategory already exists")
     @POST
     public Uni<RestResponse<Void>> create(@Valid EventCategoryRequest eventCategory,
             @Context UriInfo uriInfo) {
@@ -57,6 +68,11 @@ public class EventCategoryResource {
                 });
     }
 
+    @Operation(summary = "Find EventCategory by ID")
+    @APIResponse(responseCode = "200", description = "EventCategory found", 
+    content = @Content(mediaType = "application/json", 
+    schema = @Schema(implementation = EventCategoryResponse.class)))
+    @APIResponse(responseCode = "404", description = "EventCategory not found")
     @GET
     @Path("/{id}")
     public Uni<RestResponse<EventCategoryResponse>> findById(Long id) {
@@ -72,6 +88,11 @@ public class EventCategoryResource {
                 });
     }
 
+    @Operation(summary = "List all EventCategories")
+    @APIResponse(responseCode = "200", description = "List of EventCategories",
+     content = @Content(mediaType = "application/json",
+     schema = @Schema(implementation = EventCategoryResponse.class)))
+    @APIResponse(responseCode = "404", description = "No EventCategories found")
     @GET
     public Uni<RestResponse<List<EventCategoryResponse>>> list(
             @QueryParam("pageIndex") @DefaultValue("0") int pageIndex,
@@ -86,6 +107,13 @@ public class EventCategoryResource {
                 .map(RestResponse::ok);
     }
 
+    @Operation(summary = "Update an existing EventCategory")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "EventCategory updated", 
+            content = @Content(mediaType = "application/json", 
+            schema = @Schema(implementation = EventCategoryResponse.class))),
+            @APIResponse(responseCode = "400", description = "Invalid input"),
+            @APIResponse(responseCode = "404", description = "EventCategory not found") })
     @PUT
     @Path("/{id}")
     public Uni<RestResponse<EventCategoryResponse>> update(Long id, @Valid EventCategoryRequest eventCategory) {
@@ -102,13 +130,19 @@ public class EventCategoryResource {
 
     }
 
+    @Operation(summary = "Delete an existing EventCategory")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "EventCategory deleted"),
+            @APIResponse(responseCode = "404", description = "EventCategory not found") })
     @DELETE
     @Path("/{id}")
     public Uni<RestResponse<Void>> delete(Long id) {
         return EventCategory.findById(id)
                 .onItem().ifNull().failWith(new NotFoundException("EventCategory with id " + id + " does not exist"))
-                .map(entity ->  entity.delete())
-                .map(response ->  RestResponse.ok());
+                .map(entity -> entity.delete())
+                .map(response -> RestResponse.ok());
     }
+
+   
 
 }
