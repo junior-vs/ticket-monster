@@ -12,6 +12,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
 
+import br.studio.ticketmonster.mediaitem.MediaItemRequest;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.validation.Valid;
@@ -182,4 +183,27 @@ public class EventResource {
                     }
                 });
     }
+
+    @Operation(summary = "Include media item in event")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "201", description = "Media item included in event"),
+            @APIResponse(responseCode = "404", description = "Event not found") })
+    @POST
+    @Path("/{id}/media")
+    public Uni<RestResponse<Void>> includeMedia(@PathParam("id") Long eventId, List<@Valid MediaItemRequest> mediaItems) {
+        return eventService.includeMedia(eventId, mediaItems)
+                .map(response -> RestResponse.accepted());
+    }
+
+    @Operation(summary = "Remove media item from event")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Media item removed from event"),
+            @APIResponse(responseCode = "404", description = "Event or media item not found") })
+    @DELETE
+    @Path("/{id}/media/{idMedia}")
+    public Uni<RestResponse<Void>> removeMedia(@PathParam("id") Long eventId, @PathParam("idMedia") Long idMedia) {
+        return eventService.removeMedia(eventId, idMedia)
+                .map(response -> RestResponse.ok());
+    }
+
 }

@@ -14,4 +14,6 @@ public record EventRequest(
                 String location,
                 @NotNull Long categoryId) {
 
+
+                    
 }

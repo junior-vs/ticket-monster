@@ -5,12 +5,18 @@ import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import br.studio.ticketmonster.event.Event;
+
 @Mapper
 public interface MediaItemMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "event", ignore = true)
     MediaItem toEntity(MediaItemRequest midiaItemRequest);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "description", source = "midiaItemRequest.description")
+    MediaItem toEntity(MediaItemRequest midiaItemRequest, Event event);
 
     MediaItemResponse toResponse(MediaItem midiaItem);
 

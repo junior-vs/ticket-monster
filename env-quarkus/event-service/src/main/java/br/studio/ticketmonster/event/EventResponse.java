@@ -20,4 +20,5 @@ public record EventResponse(
                 EventCategoryResponse category,
                 List<MediaItemResponse> mediaItems) {
 
+
 }
