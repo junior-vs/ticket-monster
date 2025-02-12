@@ -14,7 +14,7 @@ public class Reviews {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venue_id", nullable = false)
-    private Venues venue;
+    private Venues venues;
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -32,9 +32,9 @@ public class Reviews {
     public Reviews() {
     }
 
-    public Reviews(UUID id, Venues venue, UUID userId, int rating, String comment) {
+    public Reviews(UUID id, Venues venues, UUID userId, int rating, String comment) {
         this.id = id;
-        this.venue = venue;
+        this.venues = venues;
         this.userId = userId;
         this.rating = rating;
         this.comment = comment;
@@ -49,12 +49,12 @@ public class Reviews {
         this.id = id;
     }
 
-    public Venues getVenue() {
-        return venue;
+    public Venues getVenues() {
+        return venues;
     }
 
-    public void setVenue(Venues venue) {
-        this.venue = venue;
+    public void setVenue(Venues venues) {
+        this.venues = venues;
     }
 
     public UUID getUserId() {

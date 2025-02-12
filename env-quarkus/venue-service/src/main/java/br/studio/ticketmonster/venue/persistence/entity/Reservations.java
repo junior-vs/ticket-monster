@@ -14,7 +14,7 @@ public class Reservations {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venue_id", nullable = false)
-    private Venues venue;
+    private Venues venues;
 
     @Column(name = "event_id")
     private UUID eventId;
@@ -37,10 +37,10 @@ public class Reservations {
     public Reservations() {
     }
 
-    public Reservations(UUID id, Venues venue, UUID eventId, UUID reservedBy, LocalDateTime startDatetime,
+    public Reservations(UUID id, Venues venues, UUID eventId, UUID reservedBy, LocalDateTime startDatetime,
             LocalDateTime endDatetime, String status) {
         this.id = id;
-        this.venue = venue;
+        this.venues= venues;
         this.eventId = eventId;
         this.reservedBy = reservedBy;
         this.startDatetime = startDatetime;
@@ -53,8 +53,8 @@ public class Reservations {
         return id;
     }
 
-    public Venues getVenue() {
-        return venue;
+    public Venues getVenues() {
+        return venues;
     }
 
     public UUID getEventId() {
