@@ -1,6 +1,5 @@
 package br.studio.ticketmonster.venue.rest;
 
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,12 +14,14 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
@@ -34,8 +35,10 @@ public class VenuesResource {
     VenuesService venuesService;
 
     @GET
-    public Uni<RestResponse<List<VenuesListResponse>>> getAllVenues() {
-        return venuesService.getAllVenues().map(RestResponse::ok);
+    public Uni<RestResponse<List<VenuesListResponse>>> getAllVenues(
+            @QueryParam("pageIndex") @DefaultValue("0") int pageIndex,
+            @QueryParam("pageSize") @DefaultValue("15") int pageSize) {
+        return venuesService.getAllVenues(pageIndex, pageSize).map(RestResponse::ok);
     }
 
     @GET
@@ -47,11 +50,8 @@ public class VenuesResource {
     @POST
     public Uni<RestResponse<Void>> createVenue(@Valid VenuesRequest venue, @Context UriInfo uriInfo) {
         return venuesService.createVenue(venue)
-                .map(v -> {
-
-                    URI uri = uriInfo.getAbsolutePathBuilder().path(v.id().toString()).build();
-                    return RestResponse.created(uri);
-                });
+                .map(v -> uriInfo.getAbsolutePathBuilder().path(v.id().toString()).build())
+                .map(uri -> RestResponse.created(uri));
     }
 
     @PUT

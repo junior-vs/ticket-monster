@@ -36,7 +36,7 @@ public class VenuesResourceTest {
     @Test
     public void testGetAllVenues() {
         List<VenuesListResponse> venues = Collections.singletonList(new VenuesListResponse(UUID.randomUUID(), "Test Venue", "Test Description"));
-        Mockito.when(venuesService.getAllVenues()).thenReturn(Uni.createFrom().item(venues));
+        Mockito.when(venuesService.getAllVenues(0, 15)).thenReturn(Uni.createFrom().item(venues));
 
         given()
           .when().get("/venues")
