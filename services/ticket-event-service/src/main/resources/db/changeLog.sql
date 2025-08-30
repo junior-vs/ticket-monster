@@ -12,7 +12,8 @@ CREATE DATABASE ticket_event
 CREATE TABLE event_category (
                                 id BIGSERIAL PRIMARY KEY,
                                 description VARCHAR(255) NOT NULL,
-                                created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                                updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 --changeset junior:1

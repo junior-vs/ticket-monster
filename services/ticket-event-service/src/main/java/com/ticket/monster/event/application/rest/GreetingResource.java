@@ -1,4 +1,4 @@
-package com.ticket.monster;
+package com.ticket.monster.event.application.rest;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
