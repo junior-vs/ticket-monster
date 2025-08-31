@@ -1,55 +1,53 @@
 package com.ticket.monster.event.domain.model;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 
 @Entity
 public class Venue {
 
-    
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "venue_seq")
     @SequenceGenerator(name = "venue_seq", sequenceName = "venue_seq", allocationSize = 1, initialValue = 1)
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private  String name;
+    private String name;
 
     @Column
-    private  String description;
+    private String description;
 
-    @Column
     @Embedded
-    private  Address address;
+    private Address address;
 
     @Column
-    private  Integer capacity;
+    private Integer capacity;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "picture_id")
-    private  MediaItem pictureCover;
+    @OneToMany(mappedBy = "venue")
+    private List<MediaItem> mediaItems = new ArrayList<>();
 
     @Column(nullable = false)
-    private  Long version;
+    private Long version;
 
     public Venue() {
     }
 
     private Venue(Builder builder) {
-        this.id = builder.id;
-        this.name = builder.name;
+        this.name = Objects.requireNonNull(builder.name);
         this.description = builder.description;
         this.address = builder.address;
         this.capacity = builder.capacity;
-        this.pictureCover = builder.pictureCover;
+        this.mediaItems = builder.mediaItems;
         this.version = builder.version;
     }
 
@@ -73,8 +71,8 @@ public class Venue {
         return capacity;
     }
 
-    public MediaItem getPictureCover() {
-        return pictureCover;
+    public List<MediaItem> getMediaItems() {
+        return mediaItems;
     }
 
     public Long getVersion() {
@@ -86,20 +84,12 @@ public class Venue {
     }
 
     public static final class Builder {
-        private Long id;
         private String name;
         private String description;
         private Address address;
         private Integer capacity;
-        private MediaItem pictureCover;
+        private List<MediaItem> mediaItems = new ArrayList<>();
         private Long version;
-
-        private Builder() {}
-
-        public Builder id(Long id) {
-            this.id = id;
-            return this;
-        }
 
         public Builder name(String name) {
             this.name = name;
@@ -121,8 +111,8 @@ public class Venue {
             return this;
         }
 
-        public Builder pictureCover(MediaItem pictureCover) {
-            this.pictureCover = pictureCover;
+        public Builder addMediaItem(MediaItem mediaItem) {
+            this.mediaItems.add(mediaItem);
             return this;
         }
 
@@ -135,5 +125,4 @@ public class Venue {
             return new Venue(this);
         }
     }
-
 }

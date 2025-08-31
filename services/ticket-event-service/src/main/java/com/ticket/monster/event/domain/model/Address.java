@@ -1,12 +1,20 @@
 package com.ticket.monster.event.domain.model;
 
 import jakarta.persistence.Embeddable;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 @Embeddable
 public class Address {
 
+    @NotNull
+    @Size(min = 1)
     private String street;
+    @NotNull
+    @Size(min = 1)
     private String city;
+    @NotNull
+    @Size(min = 1)
     private String country;
     private String zipCode;
     private String state;
@@ -14,12 +22,12 @@ public class Address {
     public Address() {
     }
 
-    private Address(Builder builder) {
-        this.street = builder.street;
-        this.city = builder.city;
-        this.country = builder.country;
-        this.zipCode = builder.zipCode;
-        this.state = builder.state;
+    public Address(String street, String city, String country, String zipCode, String state) {
+        this.street = street;
+        this.city = city;
+        this.country = country;
+        this.zipCode = zipCode;
+        this.state = state;
     }
 
     public String getStreet() {
@@ -36,48 +44,5 @@ public class Address {
     }
     public String getState() {
         return state;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static final class Builder {
-        private String street;
-        private String city;
-        private String country;
-        private String zipCode;
-        private String state;
-
-        private Builder() {}
-
-        public Builder street(String street) {
-            this.street = street;
-            return this;
-        }
-
-        public Builder city(String city) {
-            this.city = city;
-            return this;
-        }
-
-        public Builder country(String country) {
-            this.country = country;
-            return this;
-        }
-
-        public Builder zipCode(String zipCode) {
-            this.zipCode = zipCode;
-            return this;
-        }
-
-        public Builder state(String state) {
-            this.state = state;
-            return this;
-        }
-
-        public Address build() {
-            return new Address(this);
-        }
     }
 }

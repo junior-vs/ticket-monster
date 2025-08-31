@@ -16,13 +16,13 @@ import jakarta.ws.rs.NotFoundException;
 @ApplicationScoped
 public class EventService {
 
-    EventMapper eventMapper;
-    EventRepository eventRepository;
-    EventCategoryRepository eventCategoryRepository;
+    final EventMapper eventMapper;
+    final EventRepository eventRepository;
+    final EventCategoryRepository eventCategoryRepository;
 
     @Inject
-    public EventService(EventMapper eventMapper, EventRepository eventRepository,
-            EventCategoryRepository eventCategoryRepository) {
+    public EventService(final EventMapper eventMapper, final EventRepository eventRepository,
+            final EventCategoryRepository eventCategoryRepository) {
         this.eventMapper = eventMapper;
         this.eventRepository = eventRepository;
         this.eventCategoryRepository = eventCategoryRepository;
@@ -59,7 +59,7 @@ public class EventService {
                 .map(eventMapper::toResponse);
     }
 
-    //update Event
+    // update Event
     public Uni<EventResponse> update(final Long id, final EventRequest dto) {
         return eventRepository.findById(id)
                 .onItem().ifNull().failWith(new NotFoundException("Event not found"))
@@ -74,12 +74,11 @@ public class EventService {
                 .map(eventMapper::toResponse);
     }
 
-    //delete Event
+    // delete Event
     public Uni<Void> delete(final Long id) {
         return eventRepository.findById(id)
                 .onItem().ifNull().failWith(new NotFoundException("Event not found"))
                 .flatMap(eventRepository::delete);
     }
-
 
 }

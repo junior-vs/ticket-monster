@@ -1,6 +1,7 @@
 package com.ticket.monster.event.domain.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -43,22 +45,20 @@ public class Event {
     @Column(nullable = false)
     private LocalDateTime endDate;
 
-    @Column(nullable = false)
-    private String location;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private EventCategory category;
 
-    @Column(nullable = false)
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
     @UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MediaItem> mediaItems;
+    private List<MediaItem> mediaItems = new ArrayList<>();
 
     public Event() {
     }
@@ -68,45 +68,31 @@ public class Event {
         this.description = dto.description();
         this.startDate = dto.startDate();
         this.endDate = dto.endDate();
-        this.location = dto.location();
         this.category = category;
-        this.updatedAt = LocalDateTime.now();
         return this;
-    }     
-
-    /**
-     * Construtor privado para garantir imutabilidade e uso do Builder.
-     */
-
-    private Event(Builder builder) {
-
-        this.uuid = builder.uuid;
-        this.name = builder.name;
-        this.description = builder.description;
-        this.startDate = builder.startDate;
-        this.endDate = builder.endDate;
-        this.location = builder.location;
-        this.category = builder.category;
-        this.createdAt = builder.createdAt;
-        this.updatedAt = builder.updatedAt;
-
     }
 
-    /**
-     * Builder para Event, garantindo validação dos campos obrigatórios.
-     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private Event(Builder builder) {
+        this.uuid = UUID.randomUUID();
+        this.name = Objects.requireNonNull(builder.name, "name não pode ser nulo");
+        this.description = builder.description;
+        this.startDate = Objects.requireNonNull(builder.startDate, "startDate não pode ser nulo");
+        this.endDate = Objects.requireNonNull(builder.endDate, "endDate não pode ser nulo");
+        this.category = Objects.requireNonNull(builder.category, "category não pode ser nulo");
+        this.mediaItems = builder.mediaItems;
+    }
 
     public static class Builder {
-
-        private UUID uuid;
         private String name;
         private String description;
         private LocalDateTime startDate;
         private LocalDateTime endDate;
-        private String location;
         private EventCategory category;
-        private LocalDateTime createdAt;
-        private LocalDateTime updatedAt;
+        private List<MediaItem> mediaItems = new ArrayList<>();
 
         public Builder name(String name) {
             this.name = name;
@@ -128,30 +114,17 @@ public class Event {
             return this;
         }
 
-        public Builder location(String location) {
-            this.location = location;
-            return this;
-        }
-
         public Builder category(EventCategory category) {
             this.category = category;
             return this;
         }
 
-        /**
-         * Cria uma instância de Event validando os campos obrigatórios.
-         * 
-         * @throws NullPointerException se algum campo obrigatório estiver ausente.
-         */
+        public Builder addMediaItem(MediaItem mediaItem) {
+            this.mediaItems.add(mediaItem);
+            return this;
+        }
+
         public Event build() {
-            Objects.requireNonNull(UUID.randomUUID(), "uuid não pode ser nulo");
-            Objects.requireNonNull(name, "name não pode ser nulo");
-            Objects.requireNonNull(startDate, "startDate não pode ser nulo");
-            Objects.requireNonNull(endDate, "endDate não pode ser nulo");
-            Objects.requireNonNull(location, "location não pode ser nulo");
-            Objects.requireNonNull(category, "category não pode ser nulo");
-            Objects.requireNonNull(LocalDateTime.now());
-            Objects.requireNonNull(LocalDateTime.now());
             return new Event(this);
         }
     }
@@ -178,10 +151,6 @@ public class Event {
 
     public LocalDateTime getEndDate() {
         return endDate;
-    }
-
-    public String getLocation() {
-        return location;
     }
 
     public EventCategory getCategory() {

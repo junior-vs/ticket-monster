@@ -11,10 +11,8 @@ import com.ticket.monster.event.domain.model.EventCategory;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.JAKARTA_CDI)
 public interface EventMapper {
-
-
-    @Mapping(target = "mediaItems", ignore = true)    
-    //@Mapping(target = "update" , ignore = true)
+   
+    @Mapping(target = "description", source = "dto.description")
     Event toEntity(EventRequest dto, EventCategory eventCategory);
 
     @Mapping(target = "categoryId", source = "category.id")

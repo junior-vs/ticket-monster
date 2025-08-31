@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -22,30 +23,39 @@ public class MediaItem {
     private String url;
 
     @Column(nullable = false)
-    private String mediaType; // Enum pode ser criado posteriormente
+    private String mediaType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", nullable = false)
+    @JoinColumn(name = "event_id")
     private Event event;
 
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
+    private Venue venue;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
     @UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
-
 
     public MediaItem() {
     }
 
-    public MediaItem(UUID uuid, String url, String mediaType, Event event) {
-        this.uuid = uuid;
+    public MediaItem(String url, String mediaType, Event event) {
+        this.uuid = UUID.randomUUID();
         this.url = url;
         this.mediaType = mediaType;
         this.event = event;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+    }
+
+    public MediaItem(String url, String mediaType, Venue venue) {
+        this.uuid = UUID.randomUUID();
+        this.url = url;
+        this.mediaType = mediaType;
+        this.venue = venue;
     }
 
     public Long getId() {
@@ -68,12 +78,16 @@ public class MediaItem {
         return event;
     }
 
+    public Venue getVenue() {
+        return venue;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-
-    
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
 }
-

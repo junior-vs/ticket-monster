@@ -4,10 +4,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.ticket.monster.event.application.dto.EventCategoryRequest;
-import com.ticket.monster.event.infrastructure.mapping.Default;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -20,35 +20,34 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "event_category")
 public class EventCategory {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_category_seq")
     @SequenceGenerator(name = "event_category_seq", sequenceName = "event_category_seq", allocationSize = 1, initialValue = 1)
     private Long id;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Column(nullable = false, unique = true)
     private String description;
 
-    @Column(nullable = false)
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
     @UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = false, fetch = FetchType.LAZY)
-    private List<Event> events;
+    private List<Event> events = new ArrayList<>();
 
-    @Default
     public EventCategory(String description) {
         this.description = description;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        this.events = new ArrayList<>();
     }
 
     public EventCategory() {
@@ -86,8 +85,6 @@ public class EventCategory {
 
     public EventCategory update(@Valid EventCategoryRequest request) {
         this.description = request.description();
-        this.updatedAt = LocalDateTime.now();
-        return  this;
+        return this;
     }
 }
-

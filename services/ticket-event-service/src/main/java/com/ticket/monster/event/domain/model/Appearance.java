@@ -1,5 +1,6 @@
 package com.ticket.monster.event.domain.model;
 
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.persistence.CascadeType;
@@ -14,9 +15,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.SequenceGenerator;
 
-
 @Entity
-public class Show {
+public class Appearance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "show_seq")
@@ -35,13 +35,12 @@ public class Show {
     @OrderBy("date")
     private Set<Performance> performances;
 
-    public Show() {
+    public Appearance() {
     }
 
-    private Show(Builder builder) {
-        this.id = builder.id;
-        this.event = builder.event;
-        this.venue = builder.venue;
+    private Appearance(Builder builder) {
+        this.event = Objects.requireNonNull(builder.event);
+        this.venue = Objects.requireNonNull(builder.venue);
         this.performances = builder.performances;
     }
 
@@ -66,17 +65,11 @@ public class Show {
     }
 
     public static final class Builder {
-        private Long id;
         private Event event;
         private Venue venue;
         private Set<Performance> performances;
 
         private Builder() {}
-
-        public Builder id(Long id) {
-            this.id = id;
-            return this;
-        }
 
         public Builder event(Event event) {
             this.event = event;
@@ -93,9 +86,8 @@ public class Show {
             return this;
         }
 
-        public Show build() {
-            return new Show(this);
+        public Appearance build() {
+            return new Appearance(this);
         }
     }
-
 }
