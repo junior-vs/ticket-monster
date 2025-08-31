@@ -72,9 +72,8 @@ public class MediaItem {
         return createdAt;
     }
 
+
     
 
-    // Getters e Setters
-    // ...
 }
 

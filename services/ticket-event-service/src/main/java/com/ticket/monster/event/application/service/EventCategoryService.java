@@ -8,6 +8,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,15 +16,15 @@ import java.util.Optional;
 @ApplicationScoped
 public class EventCategoryService {
 
-    EventCategoryRepository eventCategoryRepository;
-    EventCategoryMapper eventCategoryMapper;
+    final EventCategoryRepository eventCategoryRepository;
+    final EventCategoryMapper eventCategoryMapper;
 
     @Inject
-    public EventCategoryService(EventCategoryRepository eventCategoryRepository, EventCategoryMapper eventCategoryMapper) {
+    public EventCategoryService(final EventCategoryRepository eventCategoryRepository,
+            final EventCategoryMapper eventCategoryMapper) {
         this.eventCategoryRepository = eventCategoryRepository;
         this.eventCategoryMapper = eventCategoryMapper;
     }
-
 
     public Uni<EventCategoryResponse> create(@Valid EventCategoryRequest request) {
         return Uni.createFrom()
@@ -38,7 +39,7 @@ public class EventCategoryService {
      * Retorna um Uni contendo um Optional com a resposta.
      * Se não encontrar, retorna Optional.empty().
      */
-    public Uni<Optional<EventCategoryResponse>> findById(final Long id) {
+    public Uni<Optional<EventCategoryResponse>> findByIdOptional(final Long id) {
         return eventCategoryRepository
                 .findById(id)
                 .map(eventCategoryMapper::toResponse)
@@ -46,6 +47,14 @@ public class EventCategoryService {
                 .onItem()
                 .ifNull().continueWith(Optional::empty);
 
+    }
+
+    public Uni<EventCategoryResponse> findById(final Long id) {
+        return eventCategoryRepository
+                .findById(id)
+                .map(eventCategoryMapper::toResponse)
+                .onItem()
+                .ifNull().failWith(new NotFoundException("Event category not found"));
 
     }
 
@@ -53,11 +62,10 @@ public class EventCategoryService {
         return eventCategoryRepository
                 .findAll()
                 .list()
-                .map(eventCategories ->
-                        eventCategories
-                                .stream()
-                                .map(eventCategoryMapper::toResponse)
-                                .toList());
+                .map(eventCategories -> eventCategories
+                        .stream()
+                        .map(eventCategoryMapper::toResponse)
+                        .toList());
     }
 
     public Uni<Optional<EventCategoryResponse>> update(Long id, @Valid EventCategoryRequest request) {
@@ -65,14 +73,13 @@ public class EventCategoryService {
         return eventCategoryRepository
                 .findById(id)
                 .onItem()
-                    .ifNotNull()
-                    .transform(eventCategory -> eventCategory.update(request))
-                    .flatMap(eventCategoryRepository::persistAndFlush)
-                    .map(eventCategory -> Optional.of(eventCategoryMapper.toResponse(eventCategory)))
+                .ifNotNull()
+                .transform(eventCategory -> eventCategory.update(request))
+                .flatMap(eventCategoryRepository::persistAndFlush)
+                .map(eventCategory -> Optional.of(eventCategoryMapper.toResponse(eventCategory)))
                 .onItem()
-                    .ifNull()
-                    .continueWith(Optional::empty);
-
+                .ifNull()
+                .continueWith(Optional::empty);
 
     }
 

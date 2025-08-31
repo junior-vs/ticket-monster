@@ -1,10 +1,16 @@
 package com.ticket.monster.event.application.rest;
 
+import java.util.List;
+
+import org.jboss.resteasy.reactive.RestResponse;
+
 import com.ticket.monster.event.application.dto.EventRequest;
 import com.ticket.monster.event.application.dto.EventResponse;
 import com.ticket.monster.event.application.service.EventService;
-import com.ticket.monster.event.domain.model.Event;
 
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -15,8 +21,10 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @Path("/events")
 @Produces(MediaType.APPLICATION_JSON)
@@ -25,48 +33,52 @@ public class EventResource {
 
     EventService eventService;
 
-
     @Inject
     public EventResource(final EventService eventService) {
         this.eventService = eventService;
     }
 
     @POST
-    public Response create(@Valid EventRequest request) {
-
-        // use mutiny to handle asynchronous processing
-        EventResponse event = eventService.create(request);
-        return Response.status(Response.Status.CREATED).entity(event.id()).build();
+    @WithTransaction
+    public Uni<RestResponse<Void>> create(@Valid EventRequest request, @Context UriInfo uriInfo) {
+        return eventService.create(request)
+                .map(event -> RestResponse.created(
+                        uriInfo.getAbsolutePathBuilder()
+                                .path(String.valueOf(event.id()))
+                                .build()));
     }
 
     @GET
     @Path("/{id}")
-    public Response getById(@PathParam("id") Long id) {
+    @WithSession
+    public Uni<RestResponse<EventResponse>> getById(@PathParam("id") Long id) {
         return eventService.findById(id)
-                .map(event -> Response.ok(event).build())
-                .orElse(Response.status(Response.Status.NOT_FOUND).entity("Evento não encontrado").build());
+                .map(event -> RestResponse.ok(event))
+                .onItem()
+                .ifNull()
+                .continueWith(() -> RestResponse.status(Response.Status.NOT_FOUND));
+
+    }
+
+    @GET
+    @WithSession
+    public Uni<RestResponse<List<EventResponse>>> listAll() {
+        return eventService.findAll().map(RestResponse::ok);
+
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") Long id, EventRequest dto) {
-        Event event = eventService.update(id, dto);
-        if (event == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Evento não encontrado").build();
-        }
-        return Response.ok(event).build();
+    public Uni<RestResponse<EventResponse>> update(@PathParam("id") Long id, EventRequest dto) {
+       return eventService.update(id, dto)
+                .map(RestResponse::ok);
+
     }
 
     @DELETE
     @Path("/{id}")
-    public Response delete(@PathParam("id") Long id) {
-        boolean deleted = eventService.delete(id);
-        if (!deleted) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Evento não encontrado").build();
-        }
-        return Response.noContent().build();
+    public Uni<RestResponse<Void>> delete(@PathParam("id") Long id) {
+       return eventService.delete(id).map(RestResponse::ok);
     }
 
-
 }
-

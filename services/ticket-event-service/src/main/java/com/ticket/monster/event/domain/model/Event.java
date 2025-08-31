@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.ticket.monster.event.application.dto.EventRequest;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,12 +18,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
-
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 public class Event {
 
-    
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_seq")
     @SequenceGenerator(name = "event_seq", sequenceName = "event_seq", allocationSize = 1, initialValue = 1)
@@ -53,15 +54,25 @@ public class Event {
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaItem> mediaItems;
 
-
     public Event() {
     }
 
+    public Event update(EventRequest dto, EventCategory category) {
+        this.name = dto.name();
+        this.description = dto.description();
+        this.startDate = dto.startDate();
+        this.endDate = dto.endDate();
+        this.location = dto.location();
+        this.category = category;
+        this.updatedAt = LocalDateTime.now();
+        return this;
+    }     
 
     /**
      * Construtor privado para garantir imutabilidade e uso do Builder.
@@ -78,7 +89,7 @@ public class Event {
         this.category = builder.category;
         this.createdAt = builder.createdAt;
         this.updatedAt = builder.updatedAt;
-        this.mediaItems = builder.mediaItems;
+
     }
 
     /**
@@ -96,21 +107,40 @@ public class Event {
         private EventCategory category;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
-        private List<MediaItem> mediaItems;
 
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
 
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
 
-        public Builder name(String name) { this.name = name; return this; }
-        public Builder description(String description) { this.description = description; return this; }
-        public Builder startDate(LocalDateTime startDate) { this.startDate = startDate; return this; }
-        public Builder endDate(LocalDateTime endDate) { this.endDate = endDate; return this; }
-        public Builder location(String location) { this.location = location; return this; }
-        public Builder category(EventCategory category) { this.category = category; return this; }
+        public Builder startDate(LocalDateTime startDate) {
+            this.startDate = startDate;
+            return this;
+        }
 
-        public Builder mediaItems(List<MediaItem> mediaItems) { this.mediaItems = mediaItems; return this; }
+        public Builder endDate(LocalDateTime endDate) {
+            this.endDate = endDate;
+            return this;
+        }
+
+        public Builder location(String location) {
+            this.location = location;
+            return this;
+        }
+
+        public Builder category(EventCategory category) {
+            this.category = category;
+            return this;
+        }
 
         /**
          * Cria uma instância de Event validando os campos obrigatórios.
+         * 
          * @throws NullPointerException se algum campo obrigatório estiver ausente.
          */
         public Event build() {
