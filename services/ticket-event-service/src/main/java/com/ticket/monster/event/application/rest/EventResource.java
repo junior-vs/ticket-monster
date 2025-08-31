@@ -1,14 +1,20 @@
 package com.ticket.monster.event.application.rest;
 
-import com.ticket.monster.event.application.dto.EventCategoryRequest;
 import com.ticket.monster.event.application.dto.EventRequest;
 import com.ticket.monster.event.application.dto.EventResponse;
-import com.ticket.monster.event.application.service.EventCategoryService;
 import com.ticket.monster.event.application.service.EventService;
 import com.ticket.monster.event.domain.model.Event;
+
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -21,7 +27,7 @@ public class EventResource {
 
 
     @Inject
-    public EventResource(EventService eventService) {
+    public EventResource(final EventService eventService) {
         this.eventService = eventService;
     }
 

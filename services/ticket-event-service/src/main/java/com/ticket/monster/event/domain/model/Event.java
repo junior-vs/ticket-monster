@@ -1,19 +1,30 @@
 package com.ticket.monster.event.domain.model;
 
-import com.ticket.monster.event.infrastructure.mapping.Default;
-import jakarta.persistence.*;
-import org.mapstruct.Builder;
-
 import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
 
 
 @Entity
 public class Event {
+
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_seq")
+    @SequenceGenerator(name = "event_seq", sequenceName = "event_seq", allocationSize = 1, initialValue = 1)
     private Long id;
 
     @Column(nullable = false, unique = true)

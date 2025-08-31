@@ -6,6 +6,7 @@ import com.ticket.monster.event.infrastructure.mapping.EventCategoryMapper;
 import com.ticket.monster.event.infrastructure.repository.EventCategoryRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class EventCategoryService {
     EventCategoryRepository eventCategoryRepository;
     EventCategoryMapper eventCategoryMapper;
 
+    @Inject
     public EventCategoryService(EventCategoryRepository eventCategoryRepository, EventCategoryMapper eventCategoryMapper) {
         this.eventCategoryRepository = eventCategoryRepository;
         this.eventCategoryMapper = eventCategoryMapper;
