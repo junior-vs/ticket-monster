@@ -1,7 +1,6 @@
 package com.ticket.monster.event.application.dto;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * DTO imutável para transferência de dados de eventos.

@@ -1,175 +1,109 @@
-Aqui está uma lista de atividades para o desenvolvimento do Microsserviço de Eventos (event-service):
+# Interação 1
 
-1. Configuração do Projeto
+## Serviço de Gerenciamento de Eventos (Event Service)
 
-1.1 Criar um repositório Git para o microsserviço.
-1.2 Configurar o projeto usando Quarkus com Maven ou Gradle.
-1.3 Definir o banco de dados relacional (PostgreSQL) e configurar o application.properties.
-1.4 Criar o Dockerfile e o docker-compose.yml para ambiente local.
+Este serviço será o "catálogo" de tudo o que pode ser reservado. Sua principal responsabilidade é fornecer informações sobre eventos e suas performances. A documentação original já descreve entidades como
 
-2. Modelagem e Persistência
+`Event` e `EventCategory`  , que seriam centrais neste serviço.
 
-2.1 Criar as entidades JPA:
+- **Entidades de Negócio**: `Event`, `EventCategory`, `Venue`, `Show`, `Performance`, `MediaItem`, `MediaType` .
 
-Event (Evento)
+- **Funcionalidades Principais**:
 
-EventCategory (Categoria do Evento)
+    - Listar todos os eventos disponíveis.
+    - Filtrar eventos por categoria .
+    - Exibir detalhes de um evento específico, incluindo sua descrição e imagens .
+    - Gerenciar informações sobre as performances de um evento em um local específico (`Show`).
+    - Gerenciar dados de locais (`Venue`)
+    - Expor APIs para consulta de eventos e locais.
 
-MediaItem (Mídia do Evento)
-2.2 Configurar o persistence.xml e o uso do Hibernate.
-2.3 Criar o esquema do banco de dados e configurar flyway ou Liquibase para versionamento.
-2.4 Criar repositórios (Repository ou Panache) para acesso aos dados.
-2.5 Popular o banco de dados com dados iniciais (import.sql).
+- **Schema do Banco de Dados**: Um schema dedicado com tabelas para `Event`, `EventCategory`, `Venue`, `Show`, `Performance`, `MediaItem` e `MediaType`. Os dados de shows e performances são o elo de ligação entre eventos e locais7.
 
+# Interação 2
 
-3. Implementação da API REST
+### Requisitos Detalhados para o Event Service
 
-3.1 Criar a estrutura de controllers (EventResource).
-3.2 Criar endpoints para CRUD de eventos:
+Com a arquitetura de microserviços em mente, o **Event Service** é o ponto central para todas as informações sobre o que o Ticket Monster oferece. Sua missão é gerenciar o catálogo de eventos, locais e performances. A documentação original, embora monolítica, já oferece um excelente ponto de partida para a extração dos requisitos deste módulo.
 
-Criar evento (POST /events)
+A seguir, uma lista detalhada das funcionalidades deste serviço:
 
-Buscar evento por ID (GET /events/{id})
+#### Gerenciamento de Eventos
 
-Listar todos os eventos (GET /events)
+- **Adicionar, atualizar e remover eventos:** Este serviço deve permitir que administradores gerenciem o ciclo de vida de um evento.
+- **Listar eventos:** Oferecer uma API para buscar todos os eventos disponíveis.
+- **Pesquisar por categoria:** Permitir que usuários e outros serviços filtrem eventos com base na sua categoria (ex: show de rock, comédia).
+- **Obter detalhes de um evento:** Fornecer uma API para recuperar informações completas de um evento específico, incluindo nome, descrição e a imagem associada.
 
-Atualizar evento (PUT /events/{id})
+#### Gerenciamento de Locais (Venues)
 
-Deletar evento (DELETE /events/{id})
-3.3 Implementar paginação e filtros nos endpoints (GET /events?category=...&date=...).
-3.4 Configurar MapStruct para conversão entre DTOs e Entidades.
-3.5 Implementar documentação da API com Swagger/OpenAPI.
+- **Adicionar, atualizar e remover locais:** Administradores devem ser capazes de gerenciar os locais onde os eventos acontecem
+- **Listar locais:** Expor uma API para buscar todos os locais
+- **Obter detalhes de um local:** Permitir a recuperação de informações detalhadas de um local, como endereço e a capacidade de cada seção
 
+#### Gerenciamento de Shows e Performances
 
-4. Comunicação Assíncrona e Mensageria
+- **Adicionar, atualizar e remover shows e performances:** O sistema deve permitir que administradores definam a relação entre um evento e um local (`Show`) e suas datas e horários de apresentação (`Performance`)
+- **Listar shows por evento/local:** Oferecer uma API para buscar as performances de um evento em um local específico
+- **Listar performances:** Fornecer as datas e horários de apresentação de um show
 
-4.1 Criar integração com Kafka ou RabbitMQ para envio de eventos assíncronos.
-4.2 Disparar evento de novo evento criado (event.created).
-4.3 Criar um consumer para escutar eventos externos, se necessário.
+#### Gerenciamento de Mídias (Media Items)
 
-5. Testes e Qualidade
+- **Adicionar mídias a eventos e locais:** Permitir a associação de imagens ou vídeos (mídia items) a um evento ou local
+- **Servir mídias:** Oferecer um endpoint para o front-end acessar diretamente as mídias (imagens, vídeos) associadas a eventos e locais.
 
-5.1 Criar testes unitários para serviços e repositórios (JUnit e Mockito).
-5.2 Criar testes de integração para API (RestAssured).
-5.3 Configurar cobertura de código com JaCoCo.
-5.4 Implementar testes de carga com Gatling ou JMeter.
+O`Event Service` também deve ser responsável por toda a validação de dados relacionados às suas entidades, como garantir que o nome de um evento seja único e que a descrição tenha um tamanho mínimo e máximo.
 
-6. Segurança e Monitoramento
+# Interação 3
 
-6.1 Implementar autenticação e autorização usando Keycloak ou JWT.
-6.2 Configurar logs estruturados com Quarkus Logging.
-6.3 Expor métricas com Micrometer e monitoramento via Prometheus/Grafana.
+O CRUD (Create, Read, Update, Delete) de Gerenciamento de Eventos dentro do nosso novo **Event Service** será a espinha dorsal para a administração do catálogo de shows e apresentações. Com base na documentação original, podemos identificar as seguintes tabelas e suas respectivas colunas para suportar este módulo. A modelagem abaixo busca um alto nível de coesão, seguindo o princípio de ter um esquema de banco de dados por microserviço.
 
-7. Deploy e Infraestrutura
+### Tabelas para o Event Service
 
-7.1 Criar o Dockerfile e configurar CI/CD para deploy automatizado.
-7.2 Configurar deploy em Kubernetes/OpenShift.
-7.3 Criar Helm Chart para o microsserviço.
-7.4 Criar uma pipeline no GitHub Actions ou Jenkins para automação.
+A partir da análise da documentação, o CRUD de eventos exigirá as seguintes tabelas:
 
+1. **`Event`**: A entidade central que representa um evento.
 
----
+    - `id`: Chave primária.
+    - `name`: Nome do evento.
+    - `description`: Descrição detalhada do evento.
+    - `major`: Flag booleana para indicar se é um evento principal (maior).
+    - `picture`: URL da imagem principal do evento.
+    - `version`: Campo para controle de concorrência.
 
-Caso precise de mais detalhes ou queira seguir uma abordagem incremental, podemos quebrar essas tarefas em sprints menores. 🚀
+2. **`EventCategory`**: Tabela de lookup para categorizar os eventos.
 
------
+    - `id`: Chave primária.
+    - `description`: Nome da categoria (ex: "Música", "Comédia", "Teatro").
 
-Aqui está uma História de Usuário (HU) para a implementação do CRUD de Eventos no event-service, utilizando o formato BDD (Behavior-Driven Development) com Given, When, Then.
+3. **`Venue`**: Representa os locais onde os eventos acontecem.
 
+    - `id`: Chave primária.
+    - `name`: Nome do local.
+    - `description`: Descrição do local.
+    - `address`: Endereço completo do local.
+    - `picture`: URL da imagem do local.
+    - `capacity`: Capacidade total de público.
+    - `version`: Campo para controle de concorrência.
 
----
+4. **`Show`**: Tabela de ligação entre um evento e um local, indicando que um determinado evento irá acontecer em um determinado local.
 
-História de Usuário
+    - `id`: Chave primária.
+    - `event_id`: Chave estrangeira para a tabela `Event`.
+    - `venue_id`: Chave estrangeira para a tabela `Venue`.
+    - `version`: Campo para controle de concorrência.
 
-Título: Gerenciar eventos no sistema
-Como um administrador do sistema, eu quero criar, visualizar, atualizar e deletar eventos, para que eu possa gerenciar a lista de eventos disponíveis.
+5. **`Performance`**: Tabela que define a data e hora específicas em que um `Show` ocorrerá.
 
+    - `id`: Chave primária.
+    - `show_id`: Chave estrangeira para a tabela `Show`.
+    - `date`: Data e hora da apresentação.
+    - `version`: Campo para controle de concorrência.
 
----
+6. **`MediaItem`**: Tabela para armazenar as URLs e os tipos de mídia associados a eventos ou locais.
 
-Cenário 1: Criar um novo evento com sucesso
-
-Given que sou um administrador autenticado
-When envio uma requisição POST /events com os seguintes dados válidos:
-
-{
-  "name": "Rock in Rio",
-  "description": "Maior festival de música do Brasil",
-  "category": "Música",
-  "startDate": "2025-09-27T20:00:00",
-  "endDate": "2025-09-30T23:59:59",
-  "location": "Rio de Janeiro",
-  "imageUrl": "https://example.com/rockinrio.jpg"
-}
-
-Then o sistema deve retornar 201 Created
-And o evento deve estar salvo no banco de dados
-And a resposta deve conter o ID do evento recém-criado
-
-
----
-
-Cenário 2: Buscar um evento existente por ID
-
-Given que existe um evento cadastrado com ID 123
-When envio uma requisição GET /events/123
-Then o sistema deve retornar 200 OK
-And a resposta deve conter os detalhes do evento:
-
-{
-  "id": 123,
-  "name": "Rock in Rio",
-  "description": "Maior festival de música do Brasil",
-  "category": "Música",
-  "startDate": "2025-09-27T20:00:00",
-  "endDate": "2025-09-30T23:59:59",
-  "location": "Rio de Janeiro",
-  "imageUrl": "https://example.com/rockinrio.jpg"
-}
+    - `id`: Chave primária.
+    - `media_url`: URL do arquivo de mídia.
+    - `type`: Tipo de mídia (ex: "image/jpeg", "video/mp4").
 
 
----
-
-Cenário 3: Atualizar um evento existente
-
-Given que existe um evento cadastrado com ID 123
-When envio uma requisição PUT /events/123 com os seguintes dados:
-
-{
-  "name": "Rock in Rio 2025",
-  "description": "Edição especial do maior festival de música",
-  "category": "Música",
-  "startDate": "2025-09-27T20:00:00",
-  "endDate": "2025-09-30T23:59:59",
-  "location": "Rio de Janeiro",
-  "imageUrl": "https://example.com/rockinrio2025.jpg"
-}
-
-Then o sistema deve retornar 200 OK
-And o evento deve ser atualizado no banco de dados
-
-
----
-
-Cenário 4: Excluir um evento existente
-
-Given que existe um evento cadastrado com ID 123
-When envio uma requisição DELETE /events/123
-Then o sistema deve retornar 204 No Content
-And o evento não deve mais existir no banco de dados
-
-
----
-
-Cenário 5: Tentar buscar um evento inexistente
-
-Given que não existe um evento com ID 999
-When envio uma requisição GET /events/999
-Then o sistema deve retornar 404 Not Found
-And a resposta deve conter a mensagem "Evento não encontrado"
-
-
----
-
-Esse conjunto de histórias em BDD pode ser usado para guiar o desenvolvimento dos endpoints REST e garantir que o comportamento esperado do sistema seja atendido. Podemos agora transformar isso em testes automatizados com JUnit + RestAssured, ou escrever cenários Cucumber se quiser uma abordagem mais orientada a testes de aceitação. 🚀
-
+A separação destas tabelas em um esquema único para o **Event Service** garante que todas as informações de catálogo estejam centralizadas e que este serviço seja o único responsável por gerenciar e expor esses dados. Futuramente, se necessário, a tabela `MediaItem` poderia ser extraída para um serviço dedicado, mas para a Fase 1, ela permanecerá aqui para simplificar a implementação.

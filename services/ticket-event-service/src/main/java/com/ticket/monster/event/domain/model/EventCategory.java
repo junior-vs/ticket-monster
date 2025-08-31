@@ -1,20 +1,33 @@
 package com.ticket.monster.event.domain.model;
 
-import com.ticket.monster.event.application.dto.EventCategoryRequest;
-import com.ticket.monster.event.infrastructure.mapping.Default;
-import io.quarkus.hibernate.orm.runtime.Hibernate;
-import jakarta.persistence.*;
-import jakarta.validation.Valid;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.ticket.monster.event.application.dto.EventCategoryRequest;
+import com.ticket.monster.event.infrastructure.mapping.Default;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.validation.Valid;
+
 @Entity
+@Table(name = "event_category")
 public class EventCategory {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "event_category_seq")
+    @SequenceGenerator(name = "event_category_seq", sequenceName = "event_category_seq", allocationSize = 1, initialValue = 1)
     private Long id;
 
     @Column(nullable = false)
@@ -75,7 +88,6 @@ public class EventCategory {
         this.description = request.description();
         this.updatedAt = LocalDateTime.now();
         return  this;
-
     }
 }
 

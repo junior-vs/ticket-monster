@@ -1,14 +1,16 @@
 package com.ticket.monster.event.application.service;
 
+import java.util.Optional;
+
 import com.ticket.monster.event.application.dto.EventRequest;
 import com.ticket.monster.event.application.dto.EventResponse;
 import com.ticket.monster.event.domain.model.Event;
 import com.ticket.monster.event.infrastructure.mapping.EventMapper;
 import com.ticket.monster.event.infrastructure.repository.EventRepository;
+
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.persistence.EntityManager;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import java.util.Optional;
 
 @ApplicationScoped
 public class EventService {
@@ -17,8 +19,8 @@ public class EventService {
     EventMapper eventMapper;
     EventRepository eventRepository;
 
+    @Inject
     public EventService(  EventMapper eventMapper, EventRepository eventRepository) {
-
         this.eventMapper = eventMapper;
         this.eventRepository = eventRepository;
     }
