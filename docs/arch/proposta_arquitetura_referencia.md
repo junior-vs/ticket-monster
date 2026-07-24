@@ -233,7 +233,111 @@ Todo I/O (banco, Redis, Kafka, chamadas entre serviços) é feito via **Mutiny**
 
 ---
 
-## 5. Fluxo de Referência: Saga de Criação de Reserva
+## 5. Segurança e Identidade (Keycloak, JWT, RBAC)
+
+### 5.1 Visão geral da solução
+
+O Keycloak atua como **Identity Provider (IdP)** central via protocolo **OIDC** (camada de identidade sobre OAuth2). O **API Gateway/BFF** valida o **JWT** em toda requisição de entrada; os microsserviços internos revalidam o token localmente (`quarkus-oidc`), sem depender de uma chamada síncrona ao Keycloak a cada request (validação via chave pública do realm, cacheada).
+
+```mermaid
+flowchart LR
+    subgraph KC["Keycloak (Realm: ticketmonster)"]
+        RP[Public Client<br/>ticketmonster-spa - PKCE]
+        RC[Confidential Client<br/>ticketmonster-gateway]
+        RS[Service Clients<br/>booking-service, inventory-service...]
+        ROLES[Client Roles:<br/>booking:read, booking:admin,<br/>catalog:write, pricing:write...]
+    end
+
+    SPA[SPA / Mobile] -->|Authorization Code + PKCE| RP
+    RP -->|JWT access_token + refresh_token| SPA
+    SPA -->|Bearer JWT| GW[API Gateway]
+    GW -->|valida assinatura JWT<br/>JWKS do Keycloak| RC
+    GW -->|Token Exchange<br/>escopo reduzido| RS
+    GW -->|Bearer JWT com claims/roles| SVC[Microsserviços]
+    SVC -->|client_credentials<br/>chamada serviço-a-serviço| RS
+```
+
+### 5.2 Glossário de termos utilizados
+
+| Termo | Definição | Onde se aplica no TicketMonster |
+|---|---|---|
+| **IdP (Identity Provider)** | Sistema central responsável por autenticar usuários e emitir tokens. | Keycloak, único IdP do domínio `ticketmonster`. |
+| **Realm** | Espaço isolado de configuração no Keycloak (usuários, clients, roles próprios). | Um realm `ticketmonster`, separado de outros sistemas da organização. |
+| **Client (Keycloak)** | Aplicação/serviço registrado no realm que pode solicitar tokens. | SPA pública, Gateway, cada microsserviço. |
+| **Public Client** | Client que **não** guarda segredo (roda no browser/mobile, código exposto ao usuário). Autentica via **PKCE**, não por `client_secret`. | SPA de compra (`ticketmonster-spa`), app mobile. |
+| **Confidential Client** | Client que roda em ambiente controlado (servidor) e pode guardar um `client_secret` com segurança. | API Gateway/BFF, que troca `client_secret` por token nas chamadas administrativas. |
+| **PKCE (Proof Key for Code Exchange)** | Extensão do Authorization Code Flow que impede interceptação do código de autorização, sem exigir `client_secret`. Obrigatório para *public clients*. | Login da SPA/mobile. |
+| **Authorization Code Flow** | Fluxo OAuth2 padrão para aplicações com interface de usuário: usuário autentica no Keycloak, recebe um *code*, trocado por tokens. | Login do comprador e do administrador. |
+| **Client Credentials Flow** | Fluxo OAuth2 sem usuário: o próprio serviço se autentica com `client_id` + `client_secret` para obter um token representando a si mesmo. | Chamadas internas serviço-a-serviço (ex.: `telemetry` consultando `catalog` em um job agendado, sem usuário envolvido). |
+| **Token Exchange** | Mecanismo (RFC 8693) que permite trocar um token por outro com escopo/audiência diferente — ex.: reduzir os privilégios do token do usuário antes de repassar a uma chamada interna. | Gateway reduzindo o escopo do JWT do comprador antes de chamar `catalog` para buscar preço. |
+| **JWT (JSON Web Token)** | Formato de token assinado (JWS), contendo claims (usuário, roles, expiração) verificáveis sem consulta ao IdP a cada uso. | Formato do `access_token` emitido pelo Keycloak. |
+| **Claims** | Pares chave-valor dentro do JWT (ex.: `sub`, `email`, `realm_access.roles`). | `sub` usado para checagem de *ownership* de reserva. |
+| **`sub` (Subject)** | Claim padrão do JWT que identifica unicamente o usuário autenticado. | Comparado ao `ownerId` do `Booking` para autorização de posse. |
+| **`azp` / `client_id`** | Claim que identifica **qual client** originou o token (a aplicação, não o usuário). | Usado na auditoria para saber se a ação veio da SPA, do admin ou de um job interno. |
+| **JWKS (JSON Web Key Set)** | Endpoint público do Keycloak com as chaves públicas usadas para validar a assinatura dos JWTs, sem precisar chamar o Keycloak a cada validação. | Consumido pelo Gateway e por cada serviço via `quarkus-oidc`. |
+| **RBAC (Role-Based Access Control)** | Modelo de autorização baseado em papéis atribuídos ao usuário/client. | `ROLE_CUSTOMER`, `ROLE_ADMIN` e roles granulares (ver 5.3). |
+| **Realm Roles** | Roles globais do realm, válidas em qualquer client. | Ex.: `platform-admin` (acesso total, uso restrito). |
+| **Client Roles** | Roles específicas de um client, mais granulares que Realm Roles. | `booking:admin`, `catalog:write`, `pricing:write` (ver 5.3). |
+| **ABAC (Attribute-Based Access Control)** | Modelo de autorização baseado em atributos do recurso/contexto (não só papel do usuário) — usado quando RBAC não é suficiente. | Checagem de *ownership* de reserva (o atributo "dono da reserva == usuário autenticado"). |
+| **UMA (User-Managed Access)** | Extensão do OAuth2 suportada pelo Keycloak Authorization Services, permitindo políticas de autorização finas administradas centralmente (não hardcoded no código do serviço). | Alternativa avaliada para autorização por recurso, caso o RBAC simples se torne insuficiente (ver 5.3). |
+| **BFF (Backend for Frontend)** | Camada intermediária entre o cliente e os microsserviços, adaptando/agregando respostas e concentrando preocupações transversais. | Papel exercido pelo API Gateway nesta arquitetura. |
+| **mTLS (mutual TLS)** | TLS onde **ambos os lados** apresentam certificado — o cliente também prova sua identidade ao servidor, não só o contrário. | Comunicação serviço-a-serviço dentro do cluster (via service mesh). |
+| **ACL (Access Control List) de tópico Kafka** | Regra que define quais *principals* (serviços) podem publicar/consumir em um tópico específico. | Só `booking` publica em `booking-events`; só `inventory`/`telemetry` consomem. |
+| **SASL/SCRAM** | Mecanismo de autenticação do Kafka baseado em usuário/senha desafio-resposta, alternativa mais simples ao mTLS entre serviço e broker. | Autenticação dos microsserviços junto ao broker Kafka. |
+| **Least Privilege** | Princípio de conceder ao usuário/serviço apenas as permissões mínimas necessárias para sua função. | Guia a granularidade das Client Roles (5.3) e do Token Exchange. |
+| **BOLA (Broken Object Level Authorization)** | Categoria de vulnerabilidade (OWASP API Top 10) onde o sistema verifica autenticação, mas não verifica se o usuário autenticado tem posse do recurso específico solicitado. | Gap confirmado no legado: `GET/DELETE /rest/bookings/{id}` sem checagem de dono. |
+| **Mass Assignment** | Vulnerabilidade onde o backend aceita e persiste qualquer campo enviado no payload, sem *whitelist* explícita. | Gap confirmado: `BookingDTO.fromDTO()` no legado aceita qualquer campo do payload de entrada. |
+
+### 5.3 Autorização fina — RBAC não é suficiente sozinho
+
+RBAC responde "o usuário tem a role X?", mas não responde "esta reserva específica pertence a ele?". É o gap mapeado como **RN-NOVA-01** (`microservices_specification.md`, seção 5.3) — hoje `GET/DELETE /rest/bookings/{id}` é aberto a qualquer requisitante, mesmo autenticado.
+
+* **Ownership check no *use case*, não só no Gateway:** comparar o claim `sub` do JWT com o `ownerId` do agregado `Booking` dentro do `CancelBookingUseCase`/`GetBookingUseCase` — nunca confiar apenas na validação de role feita na borda.
+* **Guest checkout (sem login):** manter e-mail + `CancellationCode`, mas armazenar o código **com hash** (nunca texto plano) e comparar por hash — inexistente hoje (o legado grava `"abc"` fixo em texto plano).
+* **Client Roles granulares**, evitando um `ROLE_ADMIN` monolítico: `catalog:write`, `booking:admin`, `pricing:write`, `venue:write` — cada um mapeado a um *use case* específico, seguindo *least privilege*. O legado hoje não tem nenhuma segmentação: quem acessa o painel acessa tudo.
+* **Keycloak Authorization Services (UMA/policies)** como evolução futura, caso a granularidade cresça além do que Client Roles conseguem expressar de forma simples (ex.: regras que dependem de atributo do recurso, não só do papel do usuário).
+
+### 5.4 OWASP API Security Top 10 — mapeamento a gaps já confirmados no legado
+
+| Risco OWASP | Gap confirmado no legado | Mitigação proposta |
+|---|---|---|
+| **BOLA** — Broken Object Level Authorization | `GET/DELETE /rest/bookings/{id}` sem checagem de posse | Ownership check (5.3) |
+| **Broken Function Level Authorization** | Painel admin acessível sem autenticação alguma | RBAC + Client Roles + enforcement no Gateway e no serviço |
+| **Excessive Data Exposure** | `GET /rest/bookings` lista todas as reservas de todos os clientes, incluindo e-mail (PII) de terceiros | Listagem filtrada por `sub`; endpoint administrativo separado, com role própria |
+| **Mass Assignment** | `BookingDTO.fromDTO()` aceita e persiste qualquer campo enviado, sem *whitelist* | DTOs de entrada explícitos por *use case*, nunca reaproveitar DTO de leitura para escrita |
+| **Lack of Resources & Rate Limiting** | Nenhum limite hoje — o próprio `Bot` do legado evidencia como é fácil gerar carga | Rate limiting no Gateway (RN-NOVA-04) |
+
+### 5.5 Proteção de dados pessoais (PII)
+
+`Booking.contactEmail` é dado pessoal e hoje trafega e é exposto sem controle algum.
+
+* Mascaramento de e-mail em respostas administrativas (`j***@acme.com`) quando o requisitante não for o próprio dono.
+* Política de retenção definida para reservas antigas contendo PII.
+* Se aplicável (LGPD/GDPR): regra de negócio própria para exclusão/anonimização de reserva antiga — inexistente no legado.
+
+### 5.6 Segurança na camada de mensageria (Kafka)
+
+RBAC via Keycloak cobre REST; os eventos de domínio (`BookingConfirmedEvent`, etc.) também carregam e-mail e trafegam entre serviços sem controle equivalente hoje:
+
+* **SASL/SCRAM ou mTLS** na comunicação com o broker.
+* **ACLs por tópico**: apenas `booking` publica em `booking-events`; apenas `inventory`/`telemetry` autorizados consomem.
+* Payload de evento sem PII bruta — apenas identificadores; quem precisar do e-mail consulta o serviço dono via API autenticada.
+
+### 5.7 Transporte e operação
+
+* **mTLS entre serviços** via service mesh (Istio/Linkerd) — necessário mesmo com JWT, pois o JWT prova identidade do *usuário final*, não do *serviço chamador*.
+* **Secrets management** (Vault/Kubernetes Secrets) para `client_secret` dos Confidential Clients — nunca hardcoded (o legado tem exatamente esse padrão de erro aplicado a segredo de negócio: `cancellationCode = "abc"` fixo no código).
+* **CORS estrito** no Gateway — hoje inexistente, pois front e backend do legado compartilham o mesmo WAR.
+* **Cabeçalhos de segurança** (CSP, HSTS, X-Content-Type-Options) nas respostas do Gateway/BFF.
+* **MFA obrigatório** para o realm/role de administrador — o painel admin manipula preço e inventário, é o alvo de maior impacto.
+
+### 5.8 Auditoria correlacionada à identidade
+
+A trilha de auditoria via eventos já proposta (RN-NOVA-05) passa a correlacionar cada evento de domínio ao `sub` (usuário) e ao `azp`/`client_id` (client que originou a ação), permitindo responder "quem fez o quê e quando" — inviável no legado, que não possui nenhum conceito de identidade.
+
+---
+
+## 6. Fluxo de Referência: Saga de Criação de Reserva
 
 ```mermaid
 sequenceDiagram
@@ -280,7 +384,7 @@ sequenceDiagram
 
 ---
 
-## 6. Próximos Passos Sugeridos
+## 7. Próximos Passos Sugeridos
 
 1. Validar este documento com os times de plataforma e segurança.
 2. Detalhar o modelo de dados (schemas Postgres) por serviço em documento técnico complementar.
