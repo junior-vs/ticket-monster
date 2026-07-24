@@ -2,6 +2,8 @@
 
 Este documento detalha as especificações funcionais e técnicas para cada um dos microsserviços propostos na nova arquitetura do **TicketMonster**. As regras de negócio foram extraídas do mapeamento de engenharia reversa do monolito original ([projeto.md](file:///e:/develop/repos/java-projects/ticket-monster/docs/projeto.md)) e redistribuídas sob os princípios de Domain-Driven Design (DDD).
 
+> **Nota de rastreabilidade:** a numeração das RNs (RN01–RN41) é a mesma de `projeto.md`, para permitir conferência direta com o legado. Toda RN abaixo descreve o comportamento **atual (as-is)** do sistema, exatamente como implementado hoje. Regras cujo comportamento **muda** na modernização (novo mecanismo de lock, novo processo de cancelamento, etc.) são apresentadas em duas partes dentro do mesmo microsserviço: a RN as-is (idêntica a `projeto.md`) seguida de um item **"Melhoria Proposta (To-Be)"**, explicitamente marcado como tal, para não haver ambiguidade sobre o que já existe hoje e o que é novo.
+
 ---
 
 ## 1. Microsserviço: `microservice-catalog`
@@ -56,7 +58,8 @@ Controle em tempo real da disponibilidade de poltronas livres, precificação po
 * **RN13 (Definição de Tarifa):** O preço do ingresso deve ser associado unicamente à combinação de `Show + Seção Física + Categoria de Ingresso` (ex.: Show 1, Seção "Pista", Categoria "Meia-Entrada").
 * **RN14 (Unicidade de Categoria Tarifária):** A descrição da categoria tarifária de ingresso (ex.: "Estudante", "VIP") deve ser única na base.
 * **RN20 (Alocação Contígua):** O sistema deve buscar prioritariamente uma sequência linear e contígua de assentos livres na mesma fileira para atender à quantidade de ingressos solicitados pelo comprador.
-* **RN22 (Concorrência por Poltrona):** A reserva de assentos não pode permitir reservas duplicadas da mesma poltrona física. Na arquitetura reativa, isso é resolvido usando operações atômicas NX (Not Exists) no Redis para cada assento (`lock:seat:{perfId}:{secId}:{row}:{num}`).
+* **RN22 (Concorrência por Poltrona) — As-Is:** A reserva de assentos não pode permitir reservas duplicadas da mesma poltrona física. No legado, isso é garantido por um lock pessimista de escrita (`LockModeType.PESSIMISTIC_WRITE`) sobre a linha de `SectionAllocation`, aplicado por **seção inteira** (não por assento individual) — `SeatAllocationService.retrieveSectionAllocationExclusively()`. Isso serializa toda a alocação de uma seção, mesmo entre compradores disputando assentos diferentes dentro dela.
+* **Melhoria Proposta (To-Be):** substituir o lock pessimista por seção por operações atômicas NX (Not Exists) no Redis, com granularidade por assento individual (`lock:seat:{perfId}:{secId}:{row}:{num}`), eliminando a serialização de toda a seção e permitindo concorrência real entre compradores de assentos distintos.
 * **RN23 (Expiração do Bloqueio):** Reservas temporárias de assentos (geradas durante a navegação do checkout) devem expirar automaticamente após 60 segundos, retornando as posições ao estoque disponível.
 * **RN25 (Quantidade Positiva):** A quantidade de assentos solicitada em uma requisição de alocação deve ser estritamente maior que zero.
 * **RN26 (Consistência de Desalocação):** Não é permitida a desalocação ou liberação de uma poltrona que não esteja marcada como ocupada ou reservada.
@@ -87,13 +90,14 @@ Orquestração transacional do checkout de compras. É o ponto de entrada para p
 ### Regras de Negócio (RNs) Mapeadas
 * **RN15 (Itens Mínimos):** Uma transação de reserva (`Booking`) deve conter obrigatoriamente no mínimo 1 ingresso (`Ticket`).
 * **RN16 (Validação de E-mail):** O e-mail de contato do comprador deve ser válido sintaticamente e não nulo.
-* **RN17 (Integridade de Preço):** O preço cobrado no ticket individual deve corresponder exatamente ao valor definido na tabela de preços (`TicketPrice`) ativa para o Show na data da compra.
+* **RN17 (Integridade de Preço):** O preço cobrado no ticket individual deve corresponder exatamente ao valor definido em `TicketPrice` para a combinação Show + Seção + Categoria de Ingresso no momento da criação da reserva. *(No legado o preço é copiado diretamente de `TicketPrice.getPrice()` para o `Ticket` no instante da compra; não existe histórico/versionamento de preço por data — `TicketPrice` é um valor único e atual por combinação. Se a modernização exigir preço "vigente na data", isso é uma capacidade nova, não herdada do legado.)*
 * **RN18 (Sem Categorias Duplicadas na Linha):** Não é permitida a inclusão de múltiplas solicitações para a mesma categoria de preço (`TicketPrice.id`) na mesma requisição de checkout (as quantidades de tickets da mesma modalidade devem ser agrupadas em um único item de requisição).
 * **RN19 (Cálculo do Total da Reserva):** O valor total cobrado em uma reserva é a soma exata de todos os ingressos individuais emitidos na transação.
 * **RN21 (Transação Tudo-ou-Nada):** Se a alocação de poltronas falhar para qualquer uma das seções solicitadas na requisição do cliente, a reserva inteira deve ser cancelada e estornada (Rollback da Saga).
 * **RN27 (Limpeza Transacional de Cancelamento):** A exclusão de uma reserva ativa implica obrigatoriamente no cancelamento em cascata de todos os seus ingressos (`Tickets`) e no disparo da desalocação das poltronas no estoque.
-* **RN29 (Código de Cancelamento Seguro):** O código de cancelamento deve ser gerado no backend usando algoritmo criptográfico ou UUID curto (substituindo o antigo código estático `"abc"`).
-* **RN30 (Autenticação do Cancelamento):** A exclusão de uma reserva exige obrigatoriamente o envio e validação do código de cancelamento gerado na compra correspondente.
+* **RN29 (Código de Cancelamento) — As-Is:** O legado gera um código de cancelamento **fixo e estático** `"abc"` para toda reserva (`booking.setCancellationCode("abc")` em `BookingService.createBooking()`). O campo existe no modelo (`Booking.cancellationCode`), mas nunca é gerado de forma única ou aleatória.
+* **RN30 (Autenticação do Cancelamento) — As-Is:** O método de exclusão de reserva do legado (`BookingService.deleteBooking(Long id)`) **não recebe nem valida** nenhum código de cancelamento — a operação é executada apenas com base no ID da reserva, sem qualquer verificação de posse. Isto é uma falha de controle de acesso do sistema atual (qualquer requisição `DELETE /rest/bookings/{id}` remove a reserva de terceiros), não uma proteção existente.
+* **Melhoria Proposta (To-Be):** gerar o código de cancelamento com UUID ou algoritmo criptográfico único por reserva, e passar a exigir e validar esse código na exclusão — corrigindo a falha de controle de acesso identificada em RN30 as-is. Esta é uma capacidade **nova**, não uma regra herdada do legado.
 
 ### Histórias de Usuário (US)
 * **US-BOOK-01:** Criar um pedido de compra contendo e-mail de contato, ID de performance e lista de ingressos desejados por preço.
@@ -107,7 +111,7 @@ Orquestração transacional do checkout de compras. É o ponto de entrada para p
 ### Critérios de Aceite (CAs)
 * **CA-BOOK-01-VAL:** A chamada de criação de booking (`POST /api/v1/bookings`) deve validar a estrutura de e-mail (anotação `@Email`) e rejeitar payloads que não contenham itens de ingresso, retornando HTTP 400.
 * **CA-BOOK-02-SAG:** Caso o Kafka ou o `microservice-inventory` sinalize falha de alocação de poltrona, a reserva correspondente no banco de dados do `microservice-booking` deve ser imediatamente alterada para o status `FAILED`, liberando quaisquer recursos.
-* **CA-BOOK-03-SEC:** O método de cancelamento (`DELETE /api/v1/bookings/{id}`) deve conter o header `X-Cancellation-Code`. Se o código fornecido não bater com o UUID gerado no momento do cadastro do Booking, o serviço deve negar a operação retornando HTTP 403 (Forbidden).
+* **CA-BOOK-03-SEC:** O método de cancelamento (`DELETE /api/v1/bookings/{id}`) deve conter o header `X-Cancellation-Code`. Se o código fornecido não bater com o UUID gerado no momento do cadastro do Booking, o serviço deve negar a operação retornando HTTP 403 (Forbidden). *(Este controle não existe no legado — ver RN30 as-is — e é um requisito novo desta modernização.)*
 
 ---
 
