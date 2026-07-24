@@ -141,3 +141,36 @@ Consumo de eventos de vendas para atualização de painéis de ocupação em tem
 * **CA-TEL-01-MET:** A contagem de ocupação de assentos em shows deve ser atualizada em tempo real (latência menor que 2 segundos) a partir do consumo de eventos `BookingConfirmedEvent` no Kafka, atualizando os clientes ativos via WebSocket.
 * **CA-TEL-02-BOT:** O acionamento do Bot de compras simuladas deve ser isolado em container ou worker próprio para evitar consumo excessivo de CPU das threads principais de atendimento de clientes reais.
 * **CA-TEL-03-RST:** A funcionalidade de RESET deve enviar requisições de deleção assíncronas ao `microservice-booking` em lotes controlados de 10 registros. O tempo total de execução não pode impactar o tempo de resposta da API do Gateway.
+
+---
+
+## 5. Sugestões de Alteração de Regras de Negócio e Histórias de Usuário para a Modernização
+
+Visão consolidada em `modernization_architecture.md`, seção 21. Abaixo, o detalhamento específico por microsserviço — cada item indica se **altera** uma RN as-is existente ou é **novo** (sem equivalente no legado).
+
+### 5.1 `microservice-catalog`
+* **[ALTERA RN34]** O tipo de mídia deixa de ser um enum fechado (`IMAGE` apenas) e passa a ser um catálogo extensível (`IMAGE`, `VIDEO`, `AUDIO`), configurável sem redeploy do serviço.
+* **[NOVO]** `Event` passa a ter ciclo de vida explícito (`DRAFT` → `PUBLISHED` → `ARCHIVED`), em vez de existir implicitamente a partir do cadastro. Hoje qualquer `Event` criado no admin já aparece imediatamente no catálogo público.
+* **[NOVO]** `EventCategory` não pode ser excluída se houver `Event` associado (hoje o legado não impõe essa proteção explicitamente a nível de regra de negócio, apenas via eventual erro de integridade referencial do banco).
+* **US-CAT-13 (nova):** Como administrador, quero cadastrar um evento em rascunho e publicá-lo apenas quando estiver pronto, para evitar exibir eventos incompletos no catálogo público.
+* **US-CAT-14 (nova):** Como administrador, quero cadastrar mídia em vídeo além de imagem, sem depender de alteração de código do serviço.
+
+### 5.2 `microservice-inventory`
+* **[ALTERA RN22]** Granularidade do lock passa de seção inteira (lock pessimista JPA) para assento individual (Redis NX) — ver `modernization_architecture.md` seção 21 e RN22 (as-is/to-be) acima.
+* **[NOVO]** Locks órfãos (ex.: instância do serviço derruba antes de confirmar ou cancelar) devem ser recuperados automaticamente pelo TTL do Redis, sem exigir intervenção manual — capacidade equivalente ao `EXPIRATION_TIME` do legado, porém agora resiliente a falhas de processo (no legado, se a JVM cair no meio de uma alocação, o timestamp gravado na matriz ainda expira normalmente, então o comportamento é preservado, não é uma regra nova de fato — mantido aqui apenas como critério de aceite de paridade).
+* **US-INV-09 (nova):** Como plataforma, quero que uma falha do serviço de inventário durante o checkout não deixe assentos bloqueados permanentemente (o TTL do Redis garante a liberação).
+
+### 5.3 `microservice-booking`
+* **[ALTERA RN29 / RN30]** Código de cancelamento passa a ser gerado por UUID e validado no cancelamento — ver seção 3, RN29/RN30 (as-is/to-be) acima. Esta é a mudança de regra de negócio mais crítica identificada na modernização, pois corrige uma falha de controle de acesso presente no legado.
+* **[NOVO]** Posse da reserva: consulta (`GET`) e cancelamento (`DELETE`) exigem ownership (token OIDC do comprador ou e-mail + código de cancelamento). Hoje `GET /rest/bookings/{id}` e a listagem completa (`GET /rest/bookings`) são publicamente acessíveis a qualquer requisitante, sem filtro por comprador.
+* **[NOVO]** Idempotência via `Idempotency-Key` na criação de reserva, para tolerar retries de rede no fluxo distribuído (Saga) — risco que não existia na transação local única do legado.
+* **US-BOOK-08 (nova):** Como comprador, quero cancelar minha reserva informando o código de cancelamento recebido na confirmação, e ser barrado (HTTP 403) se o código não corresponder.
+* **US-BOOK-09 (nova):** Como comprador, quero reenviar uma requisição de compra sem risco de duplicar a reserva em caso de timeout de rede.
+* **US-BOOK-10 (nova):** Como comprador, quero consultar apenas as reservas associadas à minha conta/e-mail, e não a listagem completa de reservas de todos os clientes.
+
+### 5.4 `microservice-telemetry`
+* **[ALTERA CA-TEL-02-BOT → RN]** O isolamento do Bot (já previsto como critério de aceite) passa a ser formalizado como regra de negócio: o Bot **não pode** compartilhar processo/threads com os serviços que atendem tráfego real de compradores.
+* **[NOVO]** Retenção de trilha de auditoria: eventos de reserva (`BookingInitiatedEvent`, `BookingConfirmedEvent`, `BookingCancelledEvent`) publicados no Kafka devem ser retidos por período mínimo definido (ex.: 1 ano) para fins de auditoria/conciliação — o legado não mantém histórico de transições de estado, apenas o registro final no banco.
+* **US-TEL-07 (nova):** Como auditor, quero consultar o histórico de eventos de uma reserva específica (tentativas, sucesso, falha, cancelamento) para fins de conciliação financeira.
+
+> Itens marcados **[NOVO]** não têm equivalente no sistema legado e devem ser tratados no backlog como funcionalidades novas. Itens marcados **[ALTERA RNxx]** modificam o comportamento de uma regra existente e mapeada em `projeto.md` — a RN as-is correspondente permanece documentada nas seções 1–4 acima para rastreabilidade.

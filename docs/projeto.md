@@ -190,7 +190,7 @@ O sistema utiliza eventos do **CDI (Contexts and Dependency Injection)** em mem�
 | **RN33** | Painel de métricas é exclusivamente de leitura. | Somente método `@GET` exposto no serviço | `rest/MetricsService.java` |
 | **RN34** | O tipo de mídia suportado é um conjunto fechado (enum: IMAGE). | Tipo armazenado como String na base | `model/MediaType.java` |
 | **RN35** | Na falha de mídia, exibe imagem padrão `not_available.jpg`. | `createPath` com fallback local | `service/MediaManager.java` |
-| **RN36** | Arquivos de imagem cacheados no disco usam Hash Base64 da URL original. | `getCachedFileName` com codificação Base64 | `service/MediaManager.java` |
+| **RN36** | Arquivos de imagem cacheados no disco são nomeados com a *codificação* Base64 (não é uma função de hash) da URL original. | `getCachedFileName` com `Base64.encodeToString` | `service/MediaManager.java` |
 | **RN37** | A URL do item de mídia deve ser única e válida. | `@Column(unique = true) @URL` | `model/MediaItem.java` |
 | **RN38** | O Bot limita a 100 ticket requests e 100 tickets por request. | Constantes `MAX_TICKET_REQUESTS`, `MAX_TICKETS_PER_REQUEST` | `service/Bot.java` |
 | **RN39** | O Bot executa compras em background a cada 3 segundos. | `DURATION = 3000` via TimerService | `service/Bot.java` |
@@ -222,8 +222,9 @@ O sistema utiliza eventos do **CDI (Contexts and Dependency Injection)** em mem�
 * **Duplicidade de Rotas CRUD:**
   * Para as entidades principais (`Booking`, `Event`, `Show`, `Venue`), existem dois conjuntos de APIs concorrentes:
     1. Os endpoints públicos (`rest/bookings`, etc.) herdados de `BaseEntityService`.
-    2. Os endpoints administrativos do Forge (`rest/forge/bookings`, etc.).
-  * *Modernização necessária:* Consolidar em uma única API controlada por papéis de autenticação.
+    2. Os endpoints administrativos do Forge (`rest/forge/bookings`, etc.), efetivamente usados pelo painel Angular (confirmado em `admin/scripts/services/BookingFactory.js`, `EventFactory.js`, `ShowFactory.js`, `VenueFactory.js`, que apontam para `../rest/forge/...`).
+  * *Divergência de comportamento (não apenas de rota):* `BookingEndpoint.create()` (Forge, usado pelo admin) persiste a entidade diretamente via `em.persist(entity)`, **sem** passar por `SeatAllocationService`, sem validar duplicidade de categoria de tarifa (`getUniquePriceCategoryIds`) e sem disparar o evento CDI `@Created`. Já `BookingService.createBooking()` (usado pelo comprador) executa toda a lógica de alocação de assentos. Ou seja, uma reserva criada pelo admin pode referenciar tickets/assentos que nunca passaram pela matriz de alocação de `SectionAllocation`, gerando inconsistência de estoque entre o que o admin cadastra manualmente e o que o motor de vendas público controla.
+  * *Modernização necessária:* Consolidar em uma única API controlada por papéis de autenticação, garantindo que toda criação de `Booking` (inclusive via admin) passe pela mesma regra de alocação de assentos.
 
 ## 15. Lista Completa de Histórias de Usuário (Apenas Listagem)
 * **Apresentação & Vendas (Visitante):**

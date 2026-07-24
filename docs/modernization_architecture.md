@@ -550,3 +550,57 @@ Para o sucesso da modernização arquitetural do **TicketMonster**, recomendamos
 1. **Capacitação da Equipe:** Realizar treinamentos focados em Programação Reativa (Mutiny) e Arquitetura de Mensageria (Kafka).
 2. **Adotar o GitOps:** Utilizar ferramentas como ArgoCD para garantir que as configurações do Kubernetes/OpenShift permaneçam idênticas entre os ambientes de staging e produção.
 3. **Foco em Testes de Carga:** O simulador de carga (Bot) deve ser usado desde as fases iniciais da Fase 2 para realizar testes de estresse com alto volume de concorrência nos novos locks reativos do Redis, validando a ausência de overbooking sob falhas simuladas de rede.
+
+---
+
+## 21. Sugestões de Alteração de Regras de Negócio e Histórias de Usuário para a Modernização
+
+Esta seção consolida, em nível arquitetural, as mudanças de **regra de negócio** e **histórias de usuário** motivadas por gaps identificados no legado (ver `projeto.md`, seção 11 e 14). Cada item indica a RN as-is afetada, a mudança proposta e o impacto arquitetural. O detalhamento por microsserviço está em `microservices_specification.md`.
+
+### 21.1 Identidade, posse e autorização (novo — não existe no legado)
+
+O legado não possui nenhum conceito de identidade: `Visitante` e `Administrador` são atores não autenticados (confirmado — ausência de `<security-constraint>` em `web.xml` e de qualquer verificação de `Principal`/role no backend). Isso implica em duas novas regras de negócio que não têm equivalente as-is:
+
+* **RN-NOVA-01 (Posse de Reserva):** Uma reserva passa a pertencer ao identity subject (usuário autenticado via OIDC) ou, no mínimo, ao e-mail informado + código de cancelamento (fallback para compra sem login). Consultar ou cancelar uma reserva de terceiros deixa de ser permitido — hoje qualquer `GET/DELETE /rest/bookings/{id}` é aberto a qualquer requisitante.
+* **RN-NOVA-02 (Escopo Administrativo):** Toda rota de escrita administrativa (CRUD de `Event`, `Show`, `Venue`, `TicketPrice`, etc.) exige token com `ROLE_ADMIN`. Hoje o painel Angular é acessível sem autenticação.
+* **US-NOVA-01:** Como comprador, quero me autenticar (OIDC) ou informar e-mail + código de cancelamento para visualizar apenas minhas próprias reservas.
+* **US-NOVA-02:** Como administrador, quero autenticar-me via SSO corporativo para acessar o painel administrativo, com trilha de auditoria de quem alterou cada cadastro.
+* **US-NOVA-03:** Como comprador, quero que uma tentativa de cancelar uma reserva que não é minha seja rejeitada com HTTP 403.
+
+### 21.2 Unificação dos canais de escrita (corrige duplicidade Forge vs público)
+
+* **Alteração de RN:** a RN as-is "duas implementações concorrentes de criação de `Booking`" (endpoint público completo vs. endpoint Forge que faz `em.persist` direto, sem alocar assentos) é **eliminada**. Passa a existir **um único fluxo de criação de reserva**, usado tanto pelo canal público quanto pelo painel administrativo, sempre passando pela orquestração de alocação de assentos do `microservice-inventory`.
+* **US-NOVA-04:** Como administrador, quero criar uma reserva manualmente (ex.: venda por telefone) através do mesmo fluxo transacional usado pelo canal público, para que o estoque de assentos nunca fique inconsistente.
+
+### 21.3 Padronização de paginação (corrige RN42)
+
+* **Alteração de RN:** a RN42 as-is (paginação pública em base 1 via `first`/`maxResults`, paginação administrativa em base 0 via `start`/`max`) é substituída por uma única convenção REST (`page`, `size`, base 0) aplicada a todos os microsserviços, eliminando a inconsistência herdada do legado.
+
+### 21.4 Preço de ingresso — versionamento (extensão de RN17)
+
+* **Alteração de RN:** `TicketPrice` deixa de ser um valor único e mutável por combinação Show+Seção+Categoria e passa a suportar vigência temporal (`effectiveFrom`/`effectiveTo`), permitindo campanhas promocionais e reajustes sem afetar o preço já cobrado em reservas históricas. Isso é uma capacidade nova — o legado não versiona preço.
+* **US-NOVA-05:** Como administrador, quero programar um novo preço de ingresso com data de início de vigência, sem alterar o valor já cobrado em ingressos vendidos anteriormente.
+
+### 21.5 Idempotência na criação de reserva (novo — mitiga risco de arquitetura distribuída)
+
+O legado é uma transação local única (EJB `@Stateless` + JPA); a modernização introduz um fluxo distribuído (Saga com Kafka), que passa a ter risco de duplicidade em retries de rede — risco que não existia no legado.
+
+* **RN-NOVA-03:** Toda requisição de criação de reserva deve ser idempotente por meio de uma chave (`Idempotency-Key`) fornecida pelo cliente; reenvios com a mesma chave retornam o resultado da primeira tentativa, sem criar uma segunda reserva.
+* **US-NOVA-06:** Como comprador, quero que uma falha de rede durante o checkout não resulte em cobrança/reserva duplicada caso eu reenvie a compra.
+
+### 21.6 Proteção contra picos e scalping (novo — não existe no legado)
+
+* **RN-NOVA-04:** Endpoints de disponibilidade e criação de reserva devem aplicar rate limiting por usuário/IP durante abertura de vendas de shows de alta demanda.
+* **US-NOVA-07:** Como plataforma, quero limitar a taxa de requisições de um mesmo cliente para reduzir abuso automatizado (bots de revenda) durante picos de venda — sem impactar o simulador de carga legítimo (`Bot`), que deve rodar isolado (ver 21.7).
+
+### 21.7 Isolamento do simulador de carga (Bot)
+
+* **Alteração de RN:** RN38–RN41 (limites e comportamento do Bot) são preservadas como regra de negócio do ambiente de demonstração, mas o **Bot deixa de rodar dentro do mesmo processo dos serviços de produção** (hoje é um `@Singleton`/`@Stateless` EJB na mesma JVM do monólito). Passa a ser um worker isolado do `microservice-telemetry`, consumindo a mesma API pública usada por compradores reais, para não competir por CPU/threads com tráfego real.
+* **US-NOVA-08:** Como engenheiro de plataforma, quero que o Bot de simulação rode em um worker/container próprio, para que testes de carga não degradem a experiência de compradores reais.
+
+### 21.8 Trilha de auditoria via eventos (extensão de RN27/RN-Bot)
+
+* **RN-NOVA-05:** Toda mudança de estado de uma reserva (criada, confirmada, falhou, cancelada) deve gerar um evento de domínio publicado via Outbox/Kafka, retido por um período mínimo definido (ex.: 1 ano), para fins de auditoria e conciliação financeira — capacidade inexistente no legado, que não mantém histórico de transições, apenas o estado final no banco.
+* **US-NOVA-09:** Como auditor/financeiro, quero consultar o histórico completo de eventos de uma reserva (criação, tentativas de alocação, confirmação ou falha, cancelamento) para fins de conciliação e disputa.
+
+> Os itens RN-NOVA-01 a RN-NOVA-05 e US-NOVA-01 a US-NOVA-09 acima **não têm equivalente no sistema legado** — são requisitos novos motivados pela modernização, e devem ser tratados no backlog como funcionalidades novas, não como "migração" de regra existente.
