@@ -92,6 +92,7 @@ Mapeamento das 14 US quanto a pré-requisitos funcionais (não infra):
 4. **US-CAT-14** — Catálogo extensível de tipos de mídia (`VIDEO`, `AUDIO`) — depende de US-CAT-12
 5. **US-CAT-04** — Listagem pública de venues — depende de US-CAT-10
 6. **US-CAT-05** — Detalhe de venue (capacidade, seções, endereço) — depende de US-CAT-10 / US-CAT-04
+[mark -> revisar]
 
 ### Fase 2 — Evento (depende de categoria e, opcionalmente, mídia)
 7. **US-CAT-08** — CRUD de `Event` (RN01–RN05) — depende de US-CAT-09 (obrigatório) e US-CAT-12 (opcional)

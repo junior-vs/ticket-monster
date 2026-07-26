@@ -6,7 +6,7 @@
 
 ## Summary
 
-Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `microservice-catalog` (Fase 0 da arquitetura de catálogo). A solução expõe endpoints REST para criação (POST), alteração (PUT), exclusão (DELETE) administrativa e listagem (GET) pública. Operações de escrita são protegidas via Keycloak JWT RBAC (`ROLE_ADMIN`), enquanto consultas utilizam estratégia Cache-Aside via Redis para garantir latência P95 <= 50ms. O sistema assegura unicidade de descrição (RN06), impede a exclusão de categorias vinculadas a eventos (`ON DELETE RESTRICT` / RN04) e formata todas as exceções seguindo o padrão RFC 7807 (Problem Details).
+Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `microservice-catalog` (Fase 0 da arquitetura de catálogo). A solução expõe endpoints REST para criação (POST), alteração (PUT), exclusão (DELETE) administrativa e listagem (GET) pública. Operações de escrita são protegidas via Keycloak JWT RBAC (`ROLE_ADMIN`), enquanto consultas utilizam estratégia Cache-Aside via Redis sob a chave `catalog:categories:list` (FR-007) para garantir latência P95 <= 50ms. O sistema assegura unicidade e normalização de descrição com `btrim()` no use case e constraint `CHECK (description = btrim(description))` no banco (RN06, FR-002a), impede a exclusão de categorias vinculadas a eventos (`ON DELETE RESTRICT` / RN04) e formata todas as exceções seguindo o padrão RFC 7807 (Problem Details).
 
 ## Technical Context
 
@@ -19,7 +19,7 @@ Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `
 - `quarkus-oidc` (Keycloak JWT RBAC)
 - `quarkus-smallrye-fault-tolerance` & `quarkus-smallrye-health`
 
-**Storage**: PostgreSQL (`catalog_db`, schema `catalog`, tabela `event_category`) + Redis Cache (`catalog:categories:all`)
+**Storage**: PostgreSQL (`catalog_db`, schema `catalog`, tabela `event_category`) + Redis Cache (`catalog:categories:list`)
 
 **Testing**: JUnit 5, RestAssured, Testcontainers (PostgreSQL, Redis), Quarkus Security Test (`@TestSecurity`)
 
@@ -32,9 +32,9 @@ Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `
 - Escritas de categoria (POST/PUT/DELETE): latência P95 <= 150 ms (SC-001 / PR-001)
 
 **Constraints**: 
-- 100% de bloqueio com HTTP 409 RFC 7807 em tentativas de exclusão de categoria com eventos vinculados (SC-002)
-- Zero categorias duplicadas ou vazias no banco de dados (RN06, SC-003)
-- Taxa de erro não tratado (5xx) em steady-state < 0,1% (PR-003)
+- 100% de bloqueio com HTTP 409 RFC 7807 em tentativas de exclusão de categoria com eventos vinculados (SC-001, RN04)
+- Zero categorias duplicadas ou vazias no banco de dados, incluindo normalização por trim (RN06, FR-002a, SC-002)
+- Taxa de erro não tratado (5xx) em steady-state < 0,1% (PR-001)
 
 **Scale/Scope**: Entidade raiz do microsserviço `microservice-catalog`, sem dependências de FK de saída (RN06 / US-CAT-09).
 
@@ -42,9 +42,9 @@ Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Confirm layer boundaries**: PASS. O domínio (`EventCategory`) é puro e agnóstico de framework. Casos de uso (`application`) encapsulam a regra de negócio e interagem com portas (`adapter-out` Panache/Redis) e interfaces REST (`adapter-in`).
+- **Confirm layer boundaries**: PASS. O domínio (`EventCategory`) é puro e agnóstico de framework. Casos de uso (`application`) encapsulam as regras de negócio e normalização (trim) e interagem com portas (`adapter-out` Panache/Redis) e interfaces REST (`adapter-in`).
 - **Confirm contract-first scope**: PASS. Contrato OpenAPI 3.0 especificado em `contracts/event-categories-api.yaml` cobrindo requisições, respostas e formato RFC 7807 Problem Details.
-- **Confirm test depth**: PASS. Estratégia de testes estruturada cobrindo testes unitários de domínio, testes de contrato REST, testes de integração com Testcontainers (Postgres + Redis) e teste E2E do fluxo P1.
+- **Confirm test depth**: PASS. Estratégia de testes estruturada cobrindo testes unitários de domínio (incluindo validação e trim de FR-002a), testes de contrato REST, testes de integração com Testcontainers (Postgres + Redis) e teste E2E do fluxo P1.
 - **Confirm UX consistency**: PASS. Respostas de erro padronizadas em RFC 7807, semântica HTTP estrita (201, 200, 204, 400, 401, 403, 404, 409) e identificadores UUID v4.
 - **Confirm performance budgets**: PASS. Metas de latência de escrita (<= 150ms P95) e leitura cacheada (<= 50ms P95) validadas.
 - Exceptions: Nenhuma exceção necessária.
@@ -114,6 +114,6 @@ microservice-catalog/src/
 
 ## Planned Phases & Artifacts
 
-- **Phase 0: Outline & Research** -> `research.md` (Concluído)
-- **Phase 1: Design & Contracts** -> `data-model.md`, `contracts/event-categories-api.yaml`, `quickstart.md` (Concluído)
+- **Phase 0: Outline & Research** -> `research.md` (Atualizado)
+- **Phase 1: Design & Contracts** -> `data-model.md`, `contracts/event-categories-api.yaml`, `quickstart.md` (Atualizado)
 - **Phase 2: Task Generation** -> `tasks.md` (Será gerado pelo `/speckit-tasks`)
