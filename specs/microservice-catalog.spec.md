@@ -60,6 +60,60 @@ Gerenciamento das entidades de divulgação artística, locais físicos, shows c
 
 ---
 
+## Análise de Dependências — `microservice-catalog`
+
+Mapeamento das 14 US quanto a pré-requisitos funcionais (não infra):
+
+| US | Depende de | Motivo |
+|---|---|---|
+| US-CAT-09 (categorias CRUD) | — | Entidade raiz, sem FK de saída (RN06) |
+| US-CAT-12 (mídia CRUD) | — | Entidade raiz, `media_type_catalog` é seed de dados, não feature (RN34/35/37) |
+| US-CAT-10 (venue+seção CRUD) | — | Entidade raiz, sem FK de saída (RN07/RN11/RN12) |
+| US-CAT-14 (mídia vídeo) | US-CAT-12 | Estende o catálogo de tipos já criado por US-CAT-12 |
+| US-CAT-08 (evento CRUD) | US-CAT-09 (obrigatório, RN04) + US-CAT-12 (opcional, RN05) | `event.event_category_id NOT NULL` |
+| US-CAT-13 (draft→published) | US-CAT-08 | É o ciclo de vida do Event já cadastrado |
+| US-CAT-11 (show/performance CRUD) | US-CAT-08 + US-CAT-10 | `show` referencia `event_id` e `venue_id` (RN08) |
+| US-CAT-04 (listar venues) | US-CAT-10 | Leitura da entidade recém-criada |
+| US-CAT-05 (detalhe de venue) | US-CAT-10 (US-CAT-04 opcional) | Leitura de venue+seções |
+| US-CAT-01 (catálogo publicado) | US-CAT-08 + US-CAT-13 | Filtra por `status = PUBLISHED` (não existe sem ciclo de vida) |
+| US-CAT-03 (detalhe de evento) | US-CAT-08 (US-CAT-13 opcional) | Leitura por ID |
+| US-CAT-02 (filtro por categoria) | US-CAT-01 + US-CAT-09 | Estende a listagem já existente |
+| US-CAT-11 → US-CAT-06 (agenda por evento/venue) | US-CAT-11 | Lê `show` |
+| US-CAT-06 → US-CAT-07 (performances de show) | US-CAT-11 | Lê `performance` |
+
+## Lista de Tarefas Ordenada
+
+### Fase 0 — Entidades raiz (paralelizáveis entre si, sem dependência)
+1. **US-CAT-09** — CRUD de `EventCategory` (RN06; proteção `[NOVO]` contra exclusão com Event associado)
+2. **US-CAT-10** — CRUD de `Venue` + `Section` (RN07, RN11, RN12 — capacidade como coluna gerada)
+3. **US-CAT-12** — CRUD de `MediaItem` com validação síncrona de URL (RN34, RN35, RN37)
+
+### Fase 1 — Extensões diretas da Fase 0
+4. **US-CAT-14** — Catálogo extensível de tipos de mídia (`VIDEO`, `AUDIO`) — depende de US-CAT-12
+5. **US-CAT-04** — Listagem pública de venues — depende de US-CAT-10
+6. **US-CAT-05** — Detalhe de venue (capacidade, seções, endereço) — depende de US-CAT-10 / US-CAT-04
+
+### Fase 2 — Evento (depende de categoria e, opcionalmente, mídia)
+7. **US-CAT-08** — CRUD de `Event` (RN01–RN05) — depende de US-CAT-09 (obrigatório) e US-CAT-12 (opcional)
+8. **US-CAT-13** — Ciclo de vida `DRAFT → PUBLISHED → ARCHIVED` — depende de US-CAT-08
+9. **US-CAT-03** — Detalhe de evento por ID — depende de US-CAT-08
+
+### Fase 3 — Show/Performance (depende de Event + Venue)
+10. **US-CAT-11** — CRUD de `Show` e `Performance` (RN08, RN09, RN10) — depende de US-CAT-08 + US-CAT-10
+
+### Fase 4 — Leitura pública composta (depende do ciclo de vida e das relações)
+11. **US-CAT-01** — Catálogo de eventos publicados (paginado) — depende de US-CAT-08 + US-CAT-13
+12. **US-CAT-02** — Filtro de catálogo por categoria — depende de US-CAT-01 + US-CAT-09
+13. **US-CAT-06** — Agenda de shows por evento/venue — depende de US-CAT-11
+14. **US-CAT-07** — Performances/sessões de um show — depende de US-CAT-11 / US-CAT-06
+
+## Observações
+- Fases 0 e 1 podem ser desenvolvidas em paralelo por squads diferentes — não compartilham FK entre si.
+- US-CAT-01 (spec já refatorada) só é implementável de fato após US-CAT-13 existir, pois `status = PUBLISHED` é o critério central de FR-002/FR-020 — sem o ciclo de vida, a listagem "publicada" não tem o que filtrar além do `DRAFT` default.
+- US-CAT-12/US-CAT-14 podem ser adiadas para depois de US-CAT-08 sem quebrar nada, já que `media_item_id` é nullable em `event` (RN05) — citadas cedo aqui só porque não têm dependência de saída, não porque sejam bloqueantes.
+
+---
+
 # Modelo de Dados — `microservice-catalog`
 
 

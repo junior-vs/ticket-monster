@@ -1,0 +1,248 @@
+openapi: 3.0.3
+info:
+  title: Microservice Catalog - Event Categories API
+  description: Endpoints para gerenciamento administrativo e consulta de categorias de eventos (US-CAT-09).
+  version: 1.0.0
+paths:
+  /api/v1/event-categories:
+    get:
+      summary: Listar todas as categorias de eventos
+      operationId: listEventCategories
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: Lista de categorias cadastradas, ordenadas alfabeticamente por descrição.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    post:
+      summary: Cadastrar nova categoria de evento (Admin)
+      operationId: createEventCategory
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Categoria criada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Requisição inválida (descrição nula, em branco ou maior que 120 caracteres).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Não autenticado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Acesso proibido (usuário autenticado sem a role ROLE_ADMIN).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflito - Categoria com a mesma descrição já existe (RN06).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/v1/event-categories/{id}:
+    put:
+      summary: Alterar descrição de categoria existente (Admin)
+      operationId: updateEventCategory
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID da categoria
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Categoria atualizada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Dados de entrada inválidos.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Não autenticado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Acesso proibido (sem role ROLE_ADMIN).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Categoria não encontrada.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflito - Nova descrição já é utilizada por outra categoria (RN06).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      summary: Excluir categoria sem eventos associados (Admin)
+      operationId: deleteEventCategory
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID da categoria
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Categoria excluída com sucesso (Sem conteúdo).
+        '401':
+          description: Não autenticado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Acesso proibido (sem role ROLE_ADMIN).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Categoria não encontrada.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflito - Categoria possui um ou mais eventos vinculados (ON DELETE RESTRICT / RN04).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateCategoryRequest:
+      type: object
+      required:
+        - description
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Orquestra
+
+    UpdateCategoryRequest:
+      type: object
+      required:
+        - description
+      properties:
+        description:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Orquestra Sinfônica
+
+    CategoryResponse:
+      type: object
+      required:
+        - id
+        - description
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+        description:
+          type: string
+          example: Orquestra
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-07-25T14:30:00Z"
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          example: https://ticketmonster.com/errors/conflict
+        title:
+          type: string
+          example: Categoria Duplicada
+        status:
+          type: integer
+          example: 409
+        detail:
+          type: string
+          example: Já existe uma categoria cadastrada com a descrição 'Orquestra'.
+        instance:
+          type: string
+          example: /api/v1/event-categories
