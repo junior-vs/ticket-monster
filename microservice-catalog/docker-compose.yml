@@ -1,0 +1,38 @@
+name: ticketmonster-catalog
+
+services:
+  microservice-catalog:
+    image: ticketmonster/microservice-catalog:jvm
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: microservice-catalog
+    environment:
+      CATALOG_DB_USER: catalog_user
+      CATALOG_DB_PASSWORD: catalog_password
+      CATALOG_JDBC_URL: jdbc:postgresql://postgres:5432/catalog_db
+      CATALOG_REACTIVE_URL: postgresql://postgres:5432/catalog_db
+      CATALOG_REDIS_URL: redis://redis:6379/0
+      CATALOG_CACHE_KEY_PREFIX: catalog
+      CATALOG_CACHE_EVENT_TTL: PT1H
+      OIDC_AUTH_SERVER_URL: http://keycloak:8080/realms/ticketmonster
+      OIDC_CLIENT_ID: catalog-service
+      OIDC_CLIENT_SECRET: catalog-service-secret
+      OIDC_TOKEN_AUDIENCE: catalog-service
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    ports:
+      - "8080:8080"
+    networks:
+      - ticketmonster-platform
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/q/health/ready >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+networks:
+  ticketmonster-platform:
+    external: true
+    name: ticketmonster-platform

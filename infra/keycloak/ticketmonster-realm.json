@@ -1,0 +1,131 @@
+{
+  "realm": "ticketmonster",
+  "enabled": true,
+  "displayName": "TicketMonster",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "roles": {
+    "realm": [
+      { "name": "ROLE_CUSTOMER", "description": "TicketMonster customer role" },
+      { "name": "ROLE_ADMIN", "description": "TicketMonster administrator role" },
+      { "name": "ROLE_SERVICE", "description": "TicketMonster service-to-service role" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ticketmonster-web",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:8080/*"],
+      "webOrigins": ["+"],
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    },
+    {
+      "clientId": "ticketmonster-admin",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:8080/*"],
+      "webOrigins": ["+"],
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    },
+    {
+      "clientId": "ticketmonster-gateway",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "ticketmonster-gateway-secret",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "catalog-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "catalog-service-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "inventory-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "inventory-service-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "booking-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "booking-service-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "telemetry-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "telemetry-service-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
+      "realmRoles": ["ROLE_ADMIN"],
+      "requiredActions": ["CONFIGURE_TOTP"]
+    },
+    {
+      "username": "service-account-catalog-service",
+      "enabled": true,
+      "serviceAccountClientId": "catalog-service",
+      "realmRoles": ["ROLE_SERVICE"]
+    },
+    {
+      "username": "service-account-inventory-service",
+      "enabled": true,
+      "serviceAccountClientId": "inventory-service",
+      "realmRoles": ["ROLE_SERVICE"]
+    },
+    {
+      "username": "service-account-booking-service",
+      "enabled": true,
+      "serviceAccountClientId": "booking-service",
+      "realmRoles": ["ROLE_SERVICE"]
+    },
+    {
+      "username": "service-account-telemetry-service",
+      "enabled": true,
+      "serviceAccountClientId": "telemetry-service",
+      "realmRoles": ["ROLE_SERVICE"]
+    }
+  ],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false
+    }
+  ]
+}

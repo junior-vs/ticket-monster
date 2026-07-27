@@ -2,6 +2,23 @@
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
+## Local infrastructure
+
+Start shared platform dependencies from the repository root:
+
+```shell script
+docker compose -f docker-compose.shared.yml up -d
+```
+
+Package the service and start the catalog container from this module:
+
+```shell script
+./mvnw package
+docker compose up -d --build
+```
+
+The catalog service uses `catalog_db`, Redis database `0`, the Keycloak `ticketmonster` realm, Kafka topic `catalog-events`, and exports health/metrics under `/q/health/*` and `/q/metrics`.
+
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
 
 ## Running the application in dev mode
