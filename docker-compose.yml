@@ -2,19 +2,19 @@ name: ticketmonster-platform
 
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: ticketmonster-postgres
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: ${POSTGRES_CONTAINER_NAME:-ticketmonster-postgres}
     environment:
-      POSTGRES_USER: ticketmonster_admin
-      POSTGRES_PASSWORD: ticketmonster_admin
-      POSTGRES_DB: ticketmonster_admin
+      POSTGRES_USER: ${POSTGRES_USER:-ticketmonster_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ticketmonster_admin}
+      POSTGRES_DB: ${POSTGRES_DB:-ticketmonster_admin}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ticketmonster_admin -d ticketmonster_admin"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ticketmonster_admin} -d ${POSTGRES_DB:-ticketmonster_admin}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -22,11 +22,11 @@ services:
       - ticketmonster-platform
 
   redis:
-    image: redis:7.2-alpine
-    container_name: ticketmonster-redis
+    image: ${REDIS_IMAGE:-redis:7.2-alpine}
+    container_name: ${REDIS_CONTAINER_NAME:-ticketmonster-redis}
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -38,16 +38,16 @@ services:
       - ticketmonster-platform
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0
-    container_name: ticketmonster-keycloak
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.0}
+    container_name: ${KEYCLOAK_CONTAINER_NAME:-ticketmonster-keycloak}
     command: ["start-dev", "--import-realm"]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
     ports:
-      - "8081:8080"
+      - "${KEYCLOAK_PORT:-8081}:8080"
     volumes:
       - ./infra/keycloak/ticketmonster-realm.json:/opt/keycloak/data/import/ticketmonster-realm.json:ro
     healthcheck:
@@ -59,8 +59,8 @@ services:
       - ticketmonster-platform
 
   kafka:
-    image: bitnami/kafka:3.8
-    container_name: ticketmonster-kafka
+    image: ${KAFKA_IMAGE:-bitnamilegacy/kafka:3.8.0}
+    container_name: ${KAFKA_CONTAINER_NAME:-ticketmonster-kafka}
     environment:
       KAFKA_CFG_NODE_ID: 1
       KAFKA_CFG_PROCESS_ROLES: broker,controller
@@ -76,7 +76,7 @@ services:
       KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_KRAFT_CLUSTER_ID: 7JxQ1b3sT0Kp9Gd3y9xA2Q
     ports:
-      - "9092:9092"
+      - "${KAFKA_PORT:-9092}:9092"
     volumes:
       - kafka-data:/bitnami/kafka
     healthcheck:
@@ -88,8 +88,8 @@ services:
       - ticketmonster-platform
 
   kafka-init:
-    image: bitnami/kafka:3.8
-    container_name: ticketmonster-kafka-init
+    image: ${KAFKA_IMAGE:-bitnamilegacy/kafka:3.8.0}
+    container_name: ${KAFKA_INIT_CONTAINER_NAME:-ticketmonster-kafka-init}
     depends_on:
       kafka:
         condition: service_healthy
@@ -100,13 +100,13 @@ services:
       - ticketmonster-platform
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.111.0
-    container_name: ticketmonster-otel-collector
+    image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.111.0}
+    container_name: ${OTEL_COLLECTOR_CONTAINER_NAME:-ticketmonster-otel-collector}
     command: ["--config=/etc/otelcol/config.yaml"]
     ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "8889:8889"
+      - "${OTEL_COLLECTOR_GRPC_PORT:-4317}:4317"
+      - "${OTEL_COLLECTOR_HTTP_PORT:-4318}:4318"
+      - "${OTEL_COLLECTOR_METRICS_PORT:-8889}:8889"
     volumes:
       - ./infra/observability/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
     depends_on:
@@ -116,11 +116,11 @@ services:
       - ticketmonster-platform
 
   prometheus:
-    image: prom/prometheus:v2.55.0
-    container_name: ticketmonster-prometheus
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v2.55.0}
+    container_name: ${PROMETHEUS_CONTAINER_NAME:-ticketmonster-prometheus}
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
@@ -128,11 +128,11 @@ services:
       - ticketmonster-platform
 
   loki:
-    image: grafana/loki:3.2.1
-    container_name: ticketmonster-loki
+    image: ${LOKI_IMAGE:-grafana/loki:3.2.1}
+    container_name: ${LOKI_CONTAINER_NAME:-ticketmonster-loki}
     command: ["-config.file=/etc/loki/local-config.yaml"]
     ports:
-      - "3100:3100"
+      - "${LOKI_PORT:-3100}:3100"
     volumes:
       - ./infra/observability/loki-config.yaml:/etc/loki/local-config.yaml:ro
       - loki-data:/loki
@@ -140,12 +140,12 @@ services:
       - ticketmonster-platform
 
   tempo:
-    image: grafana/tempo:2.6.0
-    container_name: ticketmonster-tempo
+    image: ${TEMPO_IMAGE:-grafana/tempo:2.6.0}
+    container_name: ${TEMPO_CONTAINER_NAME:-ticketmonster-tempo}
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
-      - "3200:3200"
-      - "4319:4317"
+      - "${TEMPO_PORT:-3200}:3200"
+      - "${TEMPO_OTLP_PORT:-4319}:4317"
     volumes:
       - ./infra/observability/tempo-config.yaml:/etc/tempo.yaml:ro
       - tempo-data:/tmp/tempo
@@ -153,15 +153,15 @@ services:
       - ticketmonster-platform
 
   grafana:
-    image: grafana/grafana:11.2.0
-    container_name: ticketmonster-grafana
+    image: ${GRAFANA_IMAGE:-grafana/grafana:11.2.0}
+    container_name: ${GRAFANA_CONTAINER_NAME:-ticketmonster-grafana}
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "${GF_AUTH_ANONYMOUS_ENABLED:-true}"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: ${GF_AUTH_ANONYMOUS_ORG_ROLE:-Viewer}
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -183,4 +183,6 @@ volumes:
 
 networks:
   ticketmonster-platform:
-    name: ticketmonster-platform
+    name: ${COMPOSE_NETWORK_NAME:-ticketmonster-platform}
+
+

@@ -7,7 +7,7 @@ This folder contains the shared platform infrastructure used by all TicketMonste
 Start the shared stack from the repository root:
 
 ```shell
-docker compose -f docker-compose.shared.yml up -d
+docker compose -f docker-compose.yml up -d
 ```
 
 Shared services:
@@ -33,3 +33,6 @@ The architecture requires Kubernetes/OpenShift, Vault-backed secrets, encrypted 
 - Apply these versioned files through ArgoCD after environment-specific values are moved to sealed/external secrets.
 
 See `kubernetes/secrets-contract.md` and `gitops/argocd-contract.md` for the production handoff contract.
+
+
+docker compose -f 'docker-compose.yml' down 
