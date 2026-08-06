@@ -23,7 +23,7 @@ cd microservice-catalog
 ### Rodar especificamente a suite de categorias (Unitários, Integração e E2E P1)
 ```bash
 cd microservice-catalog
-./mvnw test -Dtest=EventCategoryResourceTest,EventCategoryServiceTest,EventCategoryRepositoryTest
+./mvnw test -Dtest=EventCategoryResourceTest,EventCategoryResourceCacheTest,EventCategoryRepositoryTest
 ```
 
 ---
@@ -34,7 +34,7 @@ Assuma a variável de ambiente `ADMIN_TOKEN` preenchida com um token JWT válido
 
 ### Cenário 1: Criar Nova Categoria (User Story 1 - P1)
 ```bash
-curl -X POST http://localhost:8080/api/v1/event-categories \
+curl -X POST http://localhost:8080/api/v1/admin/event-categories \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -43,7 +43,7 @@ curl -X POST http://localhost:8080/api/v1/event-categories \
 ```
 **Resultado Esperado**:
 - Status Code: `201 Created`
-- Header: `Location: /api/v1/event-categories/{uuid}`
+- Header: `Location: /api/v1/admin/event-categories/{uuid}`
 - Response Body:
 ```json
 {
@@ -58,7 +58,7 @@ curl -X POST http://localhost:8080/api/v1/event-categories \
 ### Cenário 2: Validação de Duplicidade (RN06)
 Tentar cadastrar novamente uma categoria com a mesma descrição:
 ```bash
-curl -X POST http://localhost:8080/api/v1/event-categories \
+curl -X POST http://localhost:8080/api/v1/admin/event-categories \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -74,7 +74,7 @@ curl -X POST http://localhost:8080/api/v1/event-categories \
   "title": "Categoria Duplicada",
   "status": 409,
   "detail": "Já existe uma categoria cadastrada com a descrição 'Orquestra'.",
-  "instance": "/api/v1/event-categories"
+  "instance": "/api/v1/admin/event-categories"
 }
 ```
 
@@ -82,7 +82,7 @@ curl -X POST http://localhost:8080/api/v1/event-categories \
 
 ### Cenário 3: Alterar Descrição de Categoria Existente (User Story 2 - P2)
 ```bash
-curl -X PUT http://localhost:8080/api/v1/event-categories/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d \
+curl -X PUT http://localhost:8080/api/v1/admin/event-categories/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -105,7 +105,7 @@ curl -X PUT http://localhost:8080/api/v1/event-categories/9b1deb4d-3b7d-4bad-9bd
 ### Cenário 4: Exclusão Bloqueada por Eventos Vinculados (User Story 3 - P3 / `ON DELETE RESTRICT`)
 Assumindo que exista um evento vinculado a esta categoria:
 ```bash
-curl -X DELETE http://localhost:8080/api/v1/event-categories/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d \
+curl -X DELETE http://localhost:8080/api/v1/admin/event-categories/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 **Resultado Esperado**:
@@ -117,7 +117,7 @@ curl -X DELETE http://localhost:8080/api/v1/event-categories/9b1deb4d-3b7d-4bad-
   "title": "Restrição de Integridade Referencial",
   "status": 409,
   "detail": "Não é possível excluir a categoria pois existem eventos associados a ela.",
-  "instance": "/api/v1/event-categories/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+  "instance": "/api/v1/admin/event-categories/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 }
 ```
 

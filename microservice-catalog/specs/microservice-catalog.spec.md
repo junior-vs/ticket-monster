@@ -84,29 +84,29 @@ Mapeamento das 14 US quanto a pré-requisitos funcionais (não infra):
 ## Lista de Tarefas Ordenada
 
 ### Fase 0 — Entidades raiz (paralelizáveis entre si, sem dependência)
-1. **US-CAT-09** — CRUD de `EventCategory` (RN06; proteção `[NOVO]` contra exclusão com Event associado)
-2. **US-CAT-10** — CRUD de `Venue` + `Section` (RN07, RN11, RN12 — capacidade como coluna gerada)
-3. **US-CAT-12** — CRUD de `MediaItem` com validação síncrona de URL (RN34, RN35, RN37)
+1. [x] **US-CAT-09** — CRUD de `EventCategory` (RN06; proteção `[NOVO]` contra exclusão com Event associado) 
+2. [ ] **US-CAT-10** — CRUD de `Venue` + `Section` (RN07, RN11, RN12 — capacidade como coluna gerada)
+3. [ ] **US-CAT-12** — CRUD de `MediaItem` com validação síncrona de URL (RN34, RN35, RN37)
 
 ### Fase 1 — Extensões diretas da Fase 0
-4. **US-CAT-14** — Catálogo extensível de tipos de mídia (`VIDEO`, `AUDIO`) — depende de US-CAT-12
-5. **US-CAT-04** — Listagem pública de venues — depende de US-CAT-10
-6. **US-CAT-05** — Detalhe de venue (capacidade, seções, endereço) — depende de US-CAT-10 / US-CAT-04
+4. [ ] **US-CAT-14** — Catálogo extensível de tipos de mídia (`VIDEO`, `AUDIO`) — depende de US-CAT-12
+5. [ ] **US-CAT-04** — Listagem pública de venues — depende de US-CAT-10
+6. [ ] **US-CAT-05** — Detalhe de venue (capacidade, seções, endereço) — depende de US-CAT-10 / US-CAT-04
 [mark -> revisar]
 
 ### Fase 2 — Evento (depende de categoria e, opcionalmente, mídia)
-7. **US-CAT-08** — CRUD de `Event` (RN01–RN05) — depende de US-CAT-09 (obrigatório) e US-CAT-12 (opcional)
-8. **US-CAT-13** — Ciclo de vida `DRAFT → PUBLISHED → ARCHIVED` — depende de US-CAT-08
-9. **US-CAT-03** — Detalhe de evento por ID — depende de US-CAT-08
+7. [ ] **US-CAT-08** — CRUD de `Event` (RN01–RN05) — depende de US-CAT-09 (obrigatório) e US-CAT-12 (opcional)
+8. [ ] **US-CAT-13** — Ciclo de vida `DRAFT → PUBLISHED → ARCHIVED` — depende de US-CAT-08
+9. [ ] **US-CAT-03** — Detalhe de evento por ID — depende de US-CAT-08
 
 ### Fase 3 — Show/Performance (depende de Event + Venue)
-10. **US-CAT-11** — CRUD de `Show` e `Performance` (RN08, RN09, RN10) — depende de US-CAT-08 + US-CAT-10
+10. [ ] **US-CAT-11** — CRUD de `Show` e `Performance` (RN08, RN09, RN10) — depende de US-CAT-08 + US-CAT-10
 
 ### Fase 4 — Leitura pública composta (depende do ciclo de vida e das relações)
-11. **US-CAT-01** — Catálogo de eventos publicados (paginado) — depende de US-CAT-08 + US-CAT-13
-12. **US-CAT-02** — Filtro de catálogo por categoria — depende de US-CAT-01 + US-CAT-09
-13. **US-CAT-06** — Agenda de shows por evento/venue — depende de US-CAT-11
-14. **US-CAT-07** — Performances/sessões de um show — depende de US-CAT-11 / US-CAT-06
+11. [ ] **US-CAT-01** — Catálogo de eventos publicados (paginado) — depende de US-CAT-08 + US-CAT-13
+12. [ ] **US-CAT-02** — Filtro de catálogo por categoria — depende de US-CAT-01 + US-CAT-09
+13. [ ] **US-CAT-06** — Agenda de shows por evento/venue — depende de US-CAT-11
+14. [ ] **US-CAT-07** — Performances/sessões de um show — depende de US-CAT-11 / US-CAT-06
 
 ## Observações
 - Fases 0 e 1 podem ser desenvolvidas em paralelo por squads diferentes — não compartilham FK entre si.

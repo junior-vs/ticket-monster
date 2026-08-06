@@ -26,6 +26,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
 
+  /api/v1/admin/event-categories:
     post:
       summary: Cadastrar nova categoria de evento (Admin)
       operationId: createEventCategory
@@ -71,7 +72,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
 
-  /api/v1/event-categories/{id}:
+  /api/v1/admin/event-categories/{id}:
     put:
       summary: Alterar descrição de categoria existente (Admin)
       operationId: updateEventCategory

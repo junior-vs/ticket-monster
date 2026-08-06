@@ -20,4 +20,12 @@
             splitStatements="true"
             stripComments="false" />
     </changeSet>
+
+    <changeSet id="003-event-category-description-constraints-1.0.1" author="ticketmonster">
+        <sqlFile
+            path="../migration/V1.0.1__event_category_description_constraints.sql"
+            relativeToChangelogFile="true"
+            splitStatements="true"
+            stripComments="false" />
+    </changeSet>
 </databaseChangeLog>
