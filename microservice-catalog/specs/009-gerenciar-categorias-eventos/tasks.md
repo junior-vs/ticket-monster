@@ -29,7 +29,7 @@
 
 - [ ] T003 Create Flyway migration script for `catalog.event_category` table with `UNIQUE` and `btrim()` constraints in `microservice-catalog/src/main/resources/db/migration/V1.0.1__create_event_category_table.sql`
 - [ ] T004 [P] Create domain entity `EventCategory` with validation and `trim()` normalization in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/entity/EventCategory.java`
-- [ ] T005 [P] Create domain exceptions (`CategoryAlreadyExistsException`, `CategoryNotFoundException`, `CategoryInUseException`) in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/exception/`
+- [ ] T005 [P] Create domain exceptions (`EventCategoryAlreadyExistsException`, `CategoryNotFoundException`, `EventCategoryInUseException`) in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/exception/`
 - [ ] T006 [P] Create JPA entity `EventCategoryEntity` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/persistence/EventCategoryEntity.java`
 - [ ] T007 Create Panache reactive repository `EventCategoryPanacheRepository` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/persistence/EventCategoryPanacheRepository.java`
 - [ ] T008 [P] Create Redis cache adapter `RedisCategoryCacheAdapter` for invalidation and retrieval under key `catalog:categories:list` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/persistence/RedisCategoryCacheAdapter.java`
@@ -96,7 +96,7 @@
 ### Implementation for User Story 3
 
 - [ ] T023 [P] [US3] Create use case interface `DeleteCategoryUseCase` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/DeleteCategoryUseCase.java`
-- [ ] T024 [US3] Implement `DeleteCategoryUseCase` logic checking for associated events, throwing `CategoryInUseException`, and invalidating Redis cache in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/service/EventCategoryApplicationService.java`
+- [ ] T024 [US3] Implement `DeleteCategoryUseCase` logic checking for associated events, throwing `EventCategoryInUseException`, and invalidating Redis cache in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/service/EventCategoryApplicationService.java`
 - [ ] T025 [US3] Implement DELETE endpoint `/api/v1/event-categories/{id}` guarded with `@RolesAllowed("ROLE_ADMIN")` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/in/rest/EventCategoryResource.java`
 
 **Checkpoint**: User Stories 1, 2, and 3 are all functional and testable independently.

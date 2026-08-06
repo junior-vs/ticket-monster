@@ -5,9 +5,17 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="001-catalog-schema" author="ticketmonster">
+    <changeSet id="001-catalog-schema-1.0" author="ticketmonster">
         <sqlFile
-            path="../migration/V1__init.sql"
+            path="../migration/V1.0__catalog_schema.sql"
+            relativeToChangelogFile="true"
+            splitStatements="true"
+            stripComments="false" />
+    </changeSet>
+
+    <changeSet id="002-catalog-des-seed-1.0" author="ticketmonster" contextFilter="des">
+        <sqlFile
+            path="../migration/V1.0__catalog_des_seed.sql"
             relativeToChangelogFile="true"
             splitStatements="true"
             stripComments="false" />

@@ -339,3 +339,51 @@ CREATE INDEX ix_performance_date ON catalog.performance(performance_date); -- US
 | [NOVO] proteção de categoria | `event_category_id ... ON DELETE RESTRICT` |
 
 > Observação: RN sobre validação de conteúdo de negócio mais complexo (ex.: regra de publicação exigir `media_item_id` preenchido) fica na camada de aplicação (`PublishEventUseCase`), não no schema — o banco garante apenas invariantes estruturais.
+
+## 5. Estrutura de Pacotes (Clean Architecture)
+
+```text 
+br.vsjr.labs.ticketmonster.catalog/
+├── adapter/
+│   ├── in/
+│   │   └── rest/
+│   │       ├── EventCategoryAdminResource.java
+│   │       ├── EventCategoryPublicResource.java
+│   │       ├── dto/
+│   │       │   ├── CreateCategoryRequest.java
+│   │       │   ├── UpdateCategoryRequest.java
+│   │       │   └── CategoryResponse.java
+│   │       ├── mapper/
+│   │       │   └── CategoryDtoMapper.java
+│   │       └── exception/
+│   │           └── CategoryExceptionMapper.java
+│   └── out/
+│       ├── persistence/
+│       │   ├── EventCategoryPanacheRepository.java
+│       │   └── entity/
+│       │       └── EventCategoryJpaEntity.java
+│       └── redis/
+│           └── CategoryRedisCacheAdapter.java
+├── application/
+│   ├── port/
+│   │   ├── in/
+│   │   │   ├── CreateCategoryUseCase.java
+│   │   │   ├── UpdateCategoryUseCase.java
+│   │   │   ├── DeleteCategoryUseCase.java
+│   │   │   └── ListCategoriesUseCase.java
+│   │   └── out/
+│   │       ├── CategoryRepositoryPort.java
+│   │       └── CategoryCachePort.java
+│   └── usecase/
+│       └── EventCategoryService.java
+└── domain/
+    ├── model/
+    │   └── EventCategory.java
+    ├── vo/
+    │   ├── CategoryId.java
+    │   └── CategoryDescription.java
+    └── exception/
+        ├── CategoryAlreadyExistsException.java
+        ├── CategoryHasEventsException.java
+        └── CategoryNotFoundException.java
+```

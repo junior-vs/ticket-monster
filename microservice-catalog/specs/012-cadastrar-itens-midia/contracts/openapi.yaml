@@ -1,0 +1,276 @@
+openapi: 3.1.0
+info:
+  title: TicketMonster Catalog Media Items API
+  version: 1.0.0
+  description: REST contract for US-CAT-12 Media Item registration with remote URL validation, automatic fallback, and extensible media type catalog (IMAGE/VIDEO/AUDIO).
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: MediaItems
+paths:
+  /admin/media-items:
+    get:
+      tags: [MediaItems]
+      summary: List all media items (admin, paginated)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Paged media items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItemPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [MediaItems]
+      summary: Create a new media item with remote URL validation and fallback
+      description: >
+        Validates URL scheme (http/https only), checks uniqueness, validates enabled media_type_code
+        against media_type_catalog, performs a non-blocking remote HTTP accessibility check with
+        250 ms timeout, and if the check fails (4xx, 5xx, timeout, or network error), applies
+        fallback by setting fallbackApplied=true and cachedFileName='not_available.jpg'.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaItemCreate'
+      responses:
+        '201':
+          description: Media item created (with or without fallback applied)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /admin/media-items/{mediaItemId}:
+    get:
+      tags: [MediaItems]
+      summary: Get a single media item by id (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaItemId'
+      responses:
+        '200':
+          description: Media item detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [MediaItems]
+      summary: Delete a media item; events referencing it are automatically unlinked (SET NULL)
+      description: >
+        Delete is ALWAYS allowed even if one or more Events reference the MediaItem.
+        The PostgreSQL DDL defines `event.media_item_id ... ON DELETE SET NULL`, so
+        affected Events will have media_item_id set to NULL. Never returns 409 for this reason.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaItemId'
+      responses:
+        '204':
+          description: Media item deleted (and unlinked from Events if applicable)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /media-items:
+    get:
+      tags: [MediaItems]
+      summary: List public media items (optional; read-only, no auth)
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Paged media items (public read)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItemPage'
+  /media-items/{mediaItemId}:
+    get:
+      tags: [MediaItems]
+      summary: Get a single media item by id (public read; for catalog consumption)
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/MediaItemId'
+      responses:
+        '200':
+          description: Media item detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    MediaItemId:
+      name: mediaItemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  responses:
+    BadRequest:
+      description: Validation failure (invalid URL scheme, invalid media type, malformed payload)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Authenticated user is not ROLE_ADMIN
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: MediaItem not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Unique constraint violation (duplicate URL)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    MediaItemCreate:
+      type: object
+      additionalProperties: false
+      required: [mediaTypeCode, url]
+      properties:
+        mediaTypeCode:
+          type: string
+          minLength: 1
+          maxLength: 30
+          description: Code from media_type_catalog with enabled=TRUE. Seed default is 'IMAGE'.
+          example: 'IMAGE'
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+          pattern: '^https?://.*'
+          description: Absolute URL with scheme http:// or https:// only; must be globally unique.
+          example: 'https://example.com/banner-show.jpg'
+    MediaItem:
+      type: object
+      required: [id, mediaTypeCode, url, fallbackApplied, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mediaTypeCode:
+          type: string
+          maxLength: 30
+          example: 'IMAGE'
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+          description: Original URL as persisted by the admin (even if fallback applied)
+        cachedFileName:
+          type: string
+          nullable: true
+          maxLength: 255
+          description: Logical identifier / object storage key. Defaults to 'not_available.jpg' when fallbackApplied=true. Backend resolution (S3/MinIO/CDN) is infrastructure concern.
+          example: 'not_available.jpg'
+        fallbackApplied:
+          type: boolean
+          description: true if remote URL check failed (timeout/4xx/5xx/network error) and fallback is in use.
+        createdAt:
+          type: string
+          format: date-time
+    MediaItemPage:
+      type: object
+      required: [content, page, size, totalElements]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaItem'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        totalElements:
+          type: integer
+          minimum: 0
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string

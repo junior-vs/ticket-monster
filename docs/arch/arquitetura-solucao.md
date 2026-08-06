@@ -1,7 +1,7 @@
 ---
 title: Arquitetura de Referência e Plano de Modernização — TicketMonster
 created: 20260724
-description: Este documento apresenta a especificação técnica e o projeto da nova arquitetura de referência para a modernização do sistema legado **TicketMonster**. O sistema foi redesenhado a partir do estado atual ("as-is") de um monolito Java EE 6 para um estado futuro ("to-be") baseado em microsserviços reativos com Quarkus, Java 21, mensageria reativa com Kafka, e cache distribuído com Redis.
+description: Este documento apresenta a especificação técnica e o projeto da nova arquitetura de referência para a modernização do sistema legado **TicketMonster**. O sistema foi redesenhado a partir do estado atual ("as-is") de um monolito Java EE 6 para um estado futuro ("to-be") baseado em microsserviços reativos com Quarkus, Java 25, mensageria reativa com Kafka, e cache distribuído com Redis.
 version:
   1.2: "este documento consolida (`merge`) os antigos `modernization_architecture.md` e `proposta_arquitetura_referencia.md` em um único arquivo, eliminando conteúdo duplicado entre eles. Onde os dois documentos originais divergiam em uma decisão técnica (não apenas repetiam conteúdo), a divergência foi formalizada em um ADR próprio (seção 21), e a alternativa descartada foi mantida documentada como parte do próprio ADR para não perder a informação. As três divergências identificadas: 
     1. **Padrão da Saga (checkout):** Coreografia vs. Orquestração — resolvido em **ADR 05**.
@@ -18,7 +18,7 @@ version:
 
 ## 1. Resumo Executivo
 
-O projeto de modernização do **TicketMonster** visa transformar uma aplicação monolítica legada (Java EE 6, Backbone.js, EJB 3.1) em uma plataforma escalável, resiliente e de alto desempenho baseada em microsserviços na nuvem. A nova arquitetura utiliza o **Quarkus 3.27+** com **Java 21**, adotando programação reativa (Mutiny) e orientada a eventos (EDA).
+O projeto de modernização do **TicketMonster** visa transformar uma aplicação monolítica legada (Java EE 6, Backbone.js, EJB 3.1) em uma plataforma escalável, resiliente e de alto desempenho baseada em microsserviços na nuvem. A nova arquitetura utiliza o **Quarkus 3.27+** com **Java 25**, adotando programação reativa (Mutiny) e orientada a eventos (EDA).
 
 Os principais objetivos de negócio e técnicos alcançados com esta proposta são:
 1. **Escalabilidade Linear:** Eliminação de gargalos transacionais centralizados para suportar picos de carga (ex.: abertura de vendas de shows populares).
@@ -801,7 +801,7 @@ sequenceDiagram
 ### ADR 01: Migração do Monolito Java EE 6 para Quarkus 3.27+
 * **Status:** Aprovado.
 * **Contexto:** O monolito legado depende de servidores JBoss antigos e Java EE 6, resultando em tempos altos de startup, alto consumo de memória e impossibilidade de escala reativa.
-* **Decisão:** Adotar Quarkus 3.27+ com Java 21 como framework base de microsserviços.
+* **Decisão:** Adotar Quarkus 3.27+ com Java 25 como framework base de microsserviços.
 * **Consequências:**
   * *Positivas:* Menor pegada de memória, inicialização quase instantânea, suporte excelente a desenvolvimento reativo (Mutiny) e compilação nativa.
   * *Negativas:* Necessidade de curva de aprendizado para a equipe em programação reativa.
@@ -880,7 +880,7 @@ sequenceDiagram
 ```
 
 ### Quick Wins (Primeiros 30 dias)
-* Configuração do repositório base com Quarkus, Gradle e Java 21.
+* Configuração do repositório base com Quarkus, Gradle e Java 25.
 * Implantação do Keycloak e migração do modelo de segurança básico (autenticação JWT).
 * Criação do ambiente Docker Compose local com Postgres, Redis e Kafka.
 
