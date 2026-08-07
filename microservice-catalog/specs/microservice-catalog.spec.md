@@ -387,3 +387,193 @@ br.vsjr.labs.ticketmonster.catalog/
         ├── CategoryHasEventsException.java
         └── CategoryNotFoundException.java
 ```
+
+
+### Flow
+
+```mermaid
+---
+references:
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/in/dto/CreateCategoryRequest.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/in/dto/EventCategoryVO.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/in/dto/UpdateCategoryRequest.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/rest/EventCategoryAdminResource.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/rest/EventCategoryResource.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/rest/mapper/EventCategoryExceptionMapper.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/mapper/EventCategoryMapper.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/mapper/QuarkusMappingConfig.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/CreateCategoryUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/DeleteCategoryUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/ListCategoriesUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/UpdateCategoryUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/usecase/EventCategoryService.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/EventCategoryEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/EventEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/EventStatus.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/MediaItemEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/MediaTypeCatalogEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/PerformanceEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/SectionEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/ShowEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/VenueAddressEmbeddable.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/VenueEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/EventCategoryAlreadyExistsException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/EventCategoryInUseException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/EventCategoryNotFoundException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/InvalidEventCategoryException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/InvalidEventCategoryInputException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/model/EventCategory.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/model/EventCategoryDescription.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/model/EventCategoryId.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/vo/EventCategoryFilter.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/vo/PageRequest.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/vo/PageResult.java"
+  - "File:
+    /microservice-catalog/src/main/resources/db/migration/V1.0.1__event_categor\
+    y_description_constraints.sql"
+  - "File:
+    /microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/inte\
+    gration/EventCategoryRepositoryTest.java"
+  - "File:
+    /microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest\
+    /EventCategoryResourceCacheTest.java"
+  - "File:
+    /microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest\
+    /EventCategoryResourceSecurityTest.java"
+  - "File:
+    /microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest\
+    /EventCategoryResourceTest.java"
+  - "File:
+    /microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/unit\
+    /domain/EventCategoryTest.java"
+generationTime: 2026-08-07T01:08:52.930Z
+---
+flowchart TD
+    A(["HTTP request"]) --> B{"Admin endpoint?"}
+    B -->|Yes| C{"Authenticated with ROLE_ADMIN?"}
+    C -->|No| E1["Return 401 or 403"]
+    C -->|Yes| D{"Method?"}
+    B -->|No| N1{"GET /api/v1/event-categories?"}
+
+    D -->|POST create| P1["Validate CreateCategoryRequest"]
+    P1 --> P2["Build EventCategoryDescription and EventCategory"]
+    P2 --> P3[[CreateCategoryUseCase.createCategory]]
+    P3 --> P4{"Description already exists?"}
+    P4 -->|Yes| X1["EventCategoryAlreadyExistsException"]
+    P4 -->|No| P5[("Repository.save")]
+    P5 --> P6[("Cache.invalidate")]
+    P6 --> P7["Map to CategoryResponse"]
+    P7 --> P8["Return 201 with Location"]
+
+    D -->|PUT update| U1["Validate UUID and UpdateCategoryRequest"]
+    U1 --> U2[[UpdateCategoryUseCase.updateCategory]]
+    U2 --> U3{"Category found?"}
+    U3 -->|No| X2["EventCategoryNotFoundException"]
+    U3 -->|Yes| U4{"existsByNormalizedDescriptionAndNotId?"}
+    U4 -->|Yes| X1
+    U4 -->|No| U5["updateEventCategory(newDescription)"]
+    U5 --> U6[("Repository.save")]
+    U6 --> U7[("Cache.invalidate")]
+    U7 --> U8["Map to CategoryResponse"]
+    U8 --> U9["Return 200"]
+
+    D -->|DELETE delete| D1["Build EventCategoryId"]
+    D1 --> D2[[DeleteCategoryUseCase.deleteCategory]]
+    D2 --> D3{"Category found?"}
+    D3 -->|No| X2
+    D3 -->|Yes| D4{"Has associated events?"}
+    D4 -->|Yes| X3["EventCategoryInUseException"]
+    D4 -->|No| D5[("Repository.deleteById")]
+    D5 --> D6{"Deleted?"}
+    D6 -->|No| X2
+    D6 -->|Yes| D7[("Cache.invalidate")]
+    D7 --> D8["Return 204"]
+
+    N1 -->|Yes| L1["Build PageRequest.of(page,size)"]
+    L1 --> L2[[ListCategoriesUseCase.listAllCategories]]
+    L2 --> L3[("Cache.getEventCategoriesList")]
+    L3 --> L4{"Cache hit?"}
+    L4 -->|Yes| L5["Use cached list"]
+    L4 -->|No| L6[("Repository.findAllOrderedByDescription")]
+    L6 --> L7[("Cache.putEventCategoryList async")]
+    L5 --> L8["Map list to CategoryResponse"]
+    L7 --> L8
+    L8 --> L9["Return 200"]
+
+    X1 --> M1[[EventCategoryExceptionMapper]]
+    X2 --> M1
+    X3 --> M1
+    M1 --> M2{"Exception type?"}
+    M2 -->|Conflict| M3["Return 409 ProblemDetails"]
+    M2 -->|Not found| M4["Return 404 ProblemDetails"]
+    M2 -->|Validation| M5["Return 400 ProblemDetails"]
+    M2 -->|Unhandled| M6["Return 500 ProblemDetails"]
+```

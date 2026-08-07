@@ -1,0 +1,281 @@
+---
+references:
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/in/dto/EventCategoryVO.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/in/dto/UpdateCategoryRequest.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/rest/EventCategoryAdminResource.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adap\
+    ter/rest/mapper/EventCategoryExceptionMapper.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/mapper/EventCategoryMapper.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/mapper/QuarkusMappingConfig.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/CreateCategoryUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/DeleteCategoryUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/ListCategoriesUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/port/in/UpdateCategoryUseCase.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/appl\
+    ication/usecase/EventCategoryService.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/EventCategoryEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/EventEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/EventStatus.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/MediaItemEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/MediaTypeCatalogEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/PerformanceEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/SectionEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/ShowEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/VenueAddressEmbeddable.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/entity/VenueEntity.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/EventCategoryAlreadyExistsException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/EventCategoryInUseException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/EventCategoryNotFoundException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/InvalidEventCategoryException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/exception/InvalidEventCategoryInputException.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/model/EventCategory.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/model/EventCategoryDescription.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/model/EventCategoryId.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/vo/EventCategoryFilter.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/vo/PageRequest.java"
+  - "File:
+    /microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/doma\
+    in/vo/PageResult.java"
+generationTime: 2026-08-07T01:13:08.926Z
+---
+sequenceDiagram
+    actor Admin as Admin User
+    actor Public as Public User
+    participant Sec as Quarkus Security/RBAC
+    participant AdminAPI as EventCategoryAdminResource
+    participant PublicAPI as EventCategoryResource
+    participant Service as EventCategoryService
+    participant Repo as EventCategoryRepositoryPort
+    participant DB as PostgreSQL (catalog.event_category)
+    participant Cache as EventCategoryCachePort (Redis)
+    participant Mapper as EventCategoryMapper
+    participant ExMapper as EventCategoryExceptionMapper
+
+    %% Single activation per participant (explicit, no +/- shortcuts)
+    activate Sec
+    activate AdminAPI
+    activate PublicAPI
+    activate Service
+    activate Repo
+    activate DB
+    activate Cache
+    activate Mapper
+    activate ExMapper
+
+    rect rgb(235,245,255)
+    Note over Admin,AdminAPI: Admin flow - Create Category
+    Admin->>Sec: POST /api/v1/admin/event-categories
+    alt Unauthorized or missing ROLE_ADMIN
+        Sec-->>Admin: 401/403
+    else Authorized
+        Sec->>AdminAPI: createCategory(CreateCategoryRequest)
+        AdminAPI->>Service: createCategory(EventCategory(description))
+        Service->>Repo: existsByNormalizedDescription(description)
+        Repo->>DB: SELECT by normalized description
+        DB-->>Repo: exists flag
+        Repo-->>Service: exists flag
+        alt Description already exists
+            Service-->>AdminAPI: EventCategoryAlreadyExistsException
+            AdminAPI->>ExMapper: toResponse(exception)
+            ExMapper-->>Admin: 409 ProblemDetails
+        else Description available
+            Service->>Repo: save(EventCategory)
+            Repo->>DB: INSERT event_category
+            DB-->>Repo: persisted row
+            Repo-->>Service: EventCategory
+            Service-)Cache: invalidateCache()
+            Cache-->>Service: invalidation done
+            Service-->>AdminAPI: EventCategory
+            AdminAPI->>Mapper: toResponse(EventCategory)
+            Mapper-->>AdminAPI: CategoryResponse
+            AdminAPI-->>Admin: 201 Created + Location
+        end
+    end
+    end
+
+    rect rgb(240,255,240)
+    Note over Admin,AdminAPI: Admin flow - Update Category
+    Admin->>Sec: PUT /api/v1/admin/event-categories/{id}
+    alt Unauthorized or missing ROLE_ADMIN
+        Sec-->>Admin: 401/403
+    else Authorized
+        Sec->>AdminAPI: updateCategory(id, UpdateCategoryRequest)
+        AdminAPI->>Service: updateCategory(EventCategoryId, EventCategoryDescription)
+        Service->>Repo: findById(id)
+        Repo->>DB: SELECT event_category by id
+        DB-->>Repo: Optional<EventCategory>
+        Repo-->>Service: Optional<EventCategory>
+        alt Category not found
+            Service-->>AdminAPI: EventCategoryNotFoundException
+            AdminAPI->>ExMapper: toResponse(exception)
+            ExMapper-->>Admin: 404 ProblemDetails
+        else Category found
+            Service->>Repo: existsByNormalizedDescriptionAndNotId(newDescription,id)
+            Repo->>DB: SELECT conflicting description
+            DB-->>Repo: existsOther flag
+            Repo-->>Service: existsOther flag
+            alt Conflicting description
+                Service-->>AdminAPI: EventCategoryAlreadyExistsException
+                AdminAPI->>ExMapper: toResponse(exception)
+                ExMapper-->>Admin: 409 ProblemDetails
+            else No conflict
+                Service-->>Service: updateEventCategory(newDescription)
+                Service->>Repo: save(updatedCategory)
+                Repo->>DB: UPDATE event_category
+                DB-->>Repo: updated row
+                Repo-->>Service: EventCategory
+                Service-)Cache: invalidateCache()
+                Cache-->>Service: invalidation done
+                Service-->>AdminAPI: EventCategory
+                AdminAPI->>Mapper: toResponse(EventCategory)
+                Mapper-->>AdminAPI: CategoryResponse
+                AdminAPI-->>Admin: 200 OK
+            end
+        end
+    end
+    end
+
+    rect rgb(255,245,235)
+    Note over Admin,AdminAPI: Admin flow - Delete Category
+    Admin->>Sec: DELETE /api/v1/admin/event-categories/{id}
+    alt Unauthorized or missing ROLE_ADMIN
+        Sec-->>Admin: 401/403
+    else Authorized
+        Sec->>AdminAPI: deleteCategory(id)
+        AdminAPI->>Service: deleteCategory(EventCategoryId)
+        Service->>Repo: findById(id)
+        Repo->>DB: SELECT event_category by id
+        DB-->>Repo: Optional<EventCategory>
+        Repo-->>Service: Optional<EventCategory>
+        alt Category not found
+            Service-->>AdminAPI: EventCategoryNotFoundException
+            AdminAPI->>ExMapper: toResponse(exception)
+            ExMapper-->>Admin: 404 ProblemDetails
+        else Category exists
+            Service->>Repo: hasAssociatedEvents(id)
+            Repo->>DB: SELECT EXISTS(events linked to category)
+            DB-->>Repo: hasAssociatedEvents flag
+            Repo-->>Service: hasAssociatedEvents flag
+            alt Category in use
+                Service-->>AdminAPI: EventCategoryInUseException
+                AdminAPI->>ExMapper: toResponse(exception)
+                ExMapper-->>Admin: 409 ProblemDetails
+            else No associated events
+                Service->>Repo: deleteById(id)
+                Repo->>DB: DELETE FROM event_category
+                DB-->>Repo: deleted flag
+                Repo-->>Service: deleted flag
+                alt Delete returned false
+                    Service-->>AdminAPI: EventCategoryNotFoundException
+                    AdminAPI->>ExMapper: toResponse(exception)
+                    ExMapper-->>Admin: 404 ProblemDetails
+                else Delete successful
+                    Service-)Cache: invalidateCache()
+                    Cache-->>Service: invalidation done
+                    Service-->>AdminAPI: void
+                    AdminAPI-->>Admin: 204 No Content
+                end
+            end
+        end
+    end
+    end
+
+    rect rgb(245,245,255)
+    Note over Public,PublicAPI: Public flow - List Categories (cache-aside)
+    Public->>PublicAPI: GET /api/v1/event-categories?page&size
+    PublicAPI->>Service: listAllCategories(PageRequest.of(page,size))
+    Service->>Cache: getEventCategoriesList(pageRequest)
+    Cache-->>Service: Optional<List<EventCategory>> or failure
+    alt Cache hit
+        Service-->>PublicAPI: cached List<EventCategory>
+        loop For each EventCategory
+            PublicAPI->>Mapper: toResponse(EventCategory)
+            Mapper-->>PublicAPI: CategoryResponse
+        end
+        PublicAPI-->>Public: 200 OK + category list
+    else Cache miss or cache read failure
+        Service-->>Service: recoverWithItem(Optional.empty()) on cache failure
+        Service->>Repo: findAllOrderedByDescription()
+        Repo->>DB: SELECT categories ORDER BY description
+        DB-->>Repo: List<EventCategory>
+        Repo-->>Service: List<EventCategory>
+        Service-)Cache: putEventCategoryList(list) (best effort)
+        Cache-->>Service: stored or recovered failure
+        Service-->>PublicAPI: List<EventCategory>
+        loop For each EventCategory
+            PublicAPI->>Mapper: toResponse(EventCategory)
+            Mapper-->>PublicAPI: CategoryResponse
+        end
+        PublicAPI-->>Public: 200 OK + category list
+    end
+    end
+
+    deactivate ExMapper
+    deactivate Mapper
+    deactivate Cache
+    deactivate DB
+    deactivate Repo
+    deactivate Service
+    deactivate PublicAPI
+    deactivate AdminAPI
+    deactivate Sec
