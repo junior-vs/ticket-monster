@@ -1,9 +1,6 @@
 package br.vsjr.labs.ticketmonster.catalog.adapter.rest;
 
-import br.vsjr.labs.ticketmonster.catalog.adapter.out.dto.CategoryResponse;
-import br.vsjr.labs.ticketmonster.catalog.application.mapper.EventCategoryMapper;
-import br.vsjr.labs.ticketmonster.catalog.application.port.in.ListCategoriesUseCase;
-import br.vsjr.labs.ticketmonster.catalog.domain.vo.PageRequest;
+
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -21,22 +18,20 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class EventCategoryResource {
 
-    private final ListCategoriesUseCase listCategoriesUseCase;
-    private final EventCategoryMapper mapper;
 
-    public EventCategoryResource(ListCategoriesUseCase listCategoriesUseCase, EventCategoryMapper mapper) {
-        this.listCategoriesUseCase = listCategoriesUseCase;
-        this.mapper = mapper;
-    }
+
 
     @GET
     @Operation(summary = "Listar categorias de evento publicamente")
     @APIResponse(responseCode = "200", description = "Categorias retornadas com sucesso")
     public Uni<List<CategoryResponse>> listCategories(@QueryParam("page") Integer page, @QueryParam("size") Integer size) {
-        var pageRequest = PageRequest.of(page, size);
-        return listCategoriesUseCase.listAllCategories(pageRequest)
-                .onItem().transform(categories -> categories.stream()
-                        .map(mapper::toResponse)
-                        .toList());
+        // Implement the logic to retrieve event categories from the database or service
+        // For demonstration purposes, we'll return a static list of categories
+        List<CategoryResponse> categories = List.of(
+                new CategoryResponse()
+        );
+
+        return Uni.createFrom().item(categories);
+ 
     }
 }

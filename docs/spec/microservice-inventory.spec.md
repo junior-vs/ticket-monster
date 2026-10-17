@@ -21,10 +21,10 @@ Controle em tempo real da disponibilidade de poltronas livres, precificação po
 * **RN26 (Consistência de Desalocação):** Não é permitida a desalocação ou liberação de uma poltrona que não esteja marcada como ocupada ou reservada.
 * **RN28 (Agrupamento de Desalocação):** O processo de liberação em lote de poltronas exige que todos os assentos informados na lista pertençam à mesma seção física da Performance.
 
-####  Sugestões de Alteração de Regras de Negócio  
+####  Sugestões de Alteração de Regras de Negócio
 * **[ALTERA RN22]** Granularidade do lock passa de seção inteira (lock pessimista JPA) para assento individual (Redis NX) — ver `modernization_architecture.md` seção 21 e RN22 (as-is/to-be) acima.
 * **[NOVO]** Locks órfãos (ex.: instância do serviço derruba antes de confirmar ou cancelar) devem ser recuperados automaticamente pelo TTL do Redis, sem exigir intervenção manual — capacidade equivalente ao `EXPIRATION_TIME` do legado, porém agora resiliente a falhas de processo (no legado, se a JVM cair no meio de uma alocação, o timestamp gravado na matriz ainda expira normalmente, então o comportamento é preservado, não é uma regra nova de fato — mantido aqui apenas como critério de aceite de paridade).
- 
+
 
 ### Histórias de Usuário (US)
 * **US-INV-01:** Consultar mapa dinâmico de assentos livres e ocupados por performance e seção específica.
@@ -65,49 +65,49 @@ Complementa `microservice-inventory_spec.md`. Detalha o schema PostgreSQL (`inve
 
 ```mermaid
 erDiagram
-    TICKET_CATEGORY ||--o{ TICKET_PRICE : tarifa
-    SECTION_SNAPSHOT ||--o{ TICKET_PRICE : precifica
-    PERFORMANCE_SNAPSHOT ||--o{ SEAT_LEDGER : ocupa
-    SECTION_SNAPSHOT ||--o{ SEAT_LEDGER : contem
+  TICKET_CATEGORY ||--o{ TICKET_PRICE : tarifa
+  SECTION_SNAPSHOT ||--o{ TICKET_PRICE : precifica
+  PERFORMANCE_SNAPSHOT ||--o{ SEAT_LEDGER : ocupa
+  SECTION_SNAPSHOT ||--o{ SEAT_LEDGER : contem
 
-    TICKET_CATEGORY {
-        uuid id PK
-        varchar description UK
-    }
-    TICKET_PRICE {
-        uuid id PK
-        uuid show_id "ref. catalog.show"
-        uuid section_id FK
-        uuid ticket_category_id FK
-        numeric price
-    }
-    SECTION_SNAPSHOT {
-        uuid section_id PK
-        uuid venue_id
-        varchar name
-        int number_of_rows
-        int row_capacity
-        int capacity
-        timestamptz synced_at
-    }
-    PERFORMANCE_SNAPSHOT {
-        uuid performance_id PK
-        uuid show_id
-        timestamptz performance_date
-        timestamptz synced_at
-    }
-    SEAT_LEDGER {
-        uuid id PK
-        uuid performance_id FK
-        uuid section_id FK
-        int seat_row
-        int seat_number
-        varchar status
-        uuid booking_id "ref. booking.booking"
-        timestamptz locked_at
-        timestamptz confirmed_at
-        timestamptz released_at
-    }
+  TICKET_CATEGORY {
+    uuid id PK
+    varchar description UK
+  }
+  TICKET_PRICE {
+    uuid id PK
+    uuid show_id "ref. catalog.show"
+    uuid section_id FK
+    uuid ticket_category_id FK
+    numeric price
+  }
+  SECTION_SNAPSHOT {
+    uuid section_id PK
+    uuid venue_id
+    varchar name
+    int number_of_rows
+    int row_capacity
+    int capacity
+    timestamptz synced_at
+  }
+  PERFORMANCE_SNAPSHOT {
+    uuid performance_id PK
+    uuid show_id
+    timestamptz performance_date
+    timestamptz synced_at
+  }
+  SEAT_LEDGER {
+    uuid id PK
+    uuid performance_id FK
+    uuid section_id FK
+    int seat_row
+    int seat_number
+    varchar status
+    uuid booking_id "ref. booking.booking"
+    timestamptz locked_at
+    timestamptz confirmed_at
+    timestamptz released_at
+  }
 ```
 
 ---
@@ -122,30 +122,30 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Categoria de tarifa de ingresso
 -- ============================================================
 CREATE TABLE inventory.ticket_category (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    description VARCHAR(120) NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT uq_ticket_category_description UNIQUE (description) -- RN14
+                                         id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                         description VARCHAR(120) NOT NULL,
+                                         created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                         CONSTRAINT uq_ticket_category_description UNIQUE (description) -- RN14
 );
 
 -- ============================================================
 -- Snapshots de leitura (populados via consumo de eventos do catalog)
 -- ============================================================
 CREATE TABLE inventory.section_snapshot (
-    section_id      UUID PRIMARY KEY,          -- = catalog.section.id
-    venue_id        UUID NOT NULL,
-    name            VARCHAR(120) NOT NULL,
-    number_of_rows  INT NOT NULL,
-    row_capacity    INT NOT NULL,
-    capacity        INT NOT NULL,
-    synced_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+                                          section_id      UUID PRIMARY KEY,          -- = catalog.section.id
+                                          venue_id        UUID NOT NULL,
+                                          name            VARCHAR(120) NOT NULL,
+                                          number_of_rows  INT NOT NULL,
+                                          row_capacity    INT NOT NULL,
+                                          capacity        INT NOT NULL,
+                                          synced_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE inventory.performance_snapshot (
-    performance_id    UUID PRIMARY KEY,        -- = catalog.performance.id
-    show_id           UUID NOT NULL,
-    performance_date  TIMESTAMPTZ NOT NULL,
-    synced_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+                                              performance_id    UUID PRIMARY KEY,        -- = catalog.performance.id
+                                              show_id           UUID NOT NULL,
+                                              performance_date  TIMESTAMPTZ NOT NULL,
+                                              synced_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX ix_performance_snapshot_date ON inventory.performance_snapshot(performance_date);
 
@@ -153,14 +153,14 @@ CREATE INDEX ix_performance_snapshot_date ON inventory.performance_snapshot(perf
 -- Preço de ingresso (RN13)
 -- ============================================================
 CREATE TABLE inventory.ticket_price (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    show_id             UUID NOT NULL,          -- ref. lógica catalog.show.id
-    section_id          UUID NOT NULL REFERENCES inventory.section_snapshot(section_id),
-    ticket_category_id  UUID NOT NULL REFERENCES inventory.ticket_category(id),
-    price               NUMERIC(10,2) NOT NULL,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT uq_ticket_price_combo UNIQUE (show_id, section_id, ticket_category_id), -- RN13
-    CONSTRAINT ck_ticket_price_non_negative CHECK (price >= 0)
+                                      id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                      show_id             UUID NOT NULL,          -- ref. lógica catalog.show.id
+                                      section_id          UUID NOT NULL REFERENCES inventory.section_snapshot(section_id),
+                                      ticket_category_id  UUID NOT NULL REFERENCES inventory.ticket_category(id),
+                                      price               NUMERIC(10,2) NOT NULL,
+                                      created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                      CONSTRAINT uq_ticket_price_combo UNIQUE (show_id, section_id, ticket_category_id), -- RN13
+                                      CONSTRAINT ck_ticket_price_non_negative CHECK (price >= 0)
 );
 CREATE INDEX ix_ticket_price_show ON inventory.ticket_price(show_id); -- US-INV-08
 
@@ -168,25 +168,25 @@ CREATE INDEX ix_ticket_price_show ON inventory.ticket_price(show_id); -- US-INV-
 -- Seat Ledger — registro definitivo de ocupação (pós-confirmação da Saga)
 -- ============================================================
 CREATE TABLE inventory.seat_ledger (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    performance_id  UUID NOT NULL REFERENCES inventory.performance_snapshot(performance_id),
-    section_id      UUID NOT NULL REFERENCES inventory.section_snapshot(section_id),
-    seat_row        INT NOT NULL,
-    seat_number     INT NOT NULL,
-    status          VARCHAR(20) NOT NULL,   -- RESERVED_PENDING | OCCUPIED | RELEASED
-    booking_id      UUID NOT NULL,           -- ref. lógica booking.booking.id
-    locked_at       TIMESTAMPTZ NULL,
-    confirmed_at    TIMESTAMPTZ NULL,
-    released_at     TIMESTAMPTZ NULL,
-    CONSTRAINT ck_seat_ledger_status CHECK (status IN ('RESERVED_PENDING','OCCUPIED','RELEASED')),
-    CONSTRAINT ck_seat_ledger_row_positive CHECK (seat_row > 0),
-    CONSTRAINT ck_seat_ledger_number_positive CHECK (seat_number > 0)
+                                     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                     performance_id  UUID NOT NULL REFERENCES inventory.performance_snapshot(performance_id),
+                                     section_id      UUID NOT NULL REFERENCES inventory.section_snapshot(section_id),
+                                     seat_row        INT NOT NULL,
+                                     seat_number     INT NOT NULL,
+                                     status          VARCHAR(20) NOT NULL,   -- RESERVED_PENDING | OCCUPIED | RELEASED
+                                     booking_id      UUID NOT NULL,           -- ref. lógica booking.booking.id
+                                     locked_at       TIMESTAMPTZ NULL,
+                                     confirmed_at    TIMESTAMPTZ NULL,
+                                     released_at     TIMESTAMPTZ NULL,
+                                     CONSTRAINT ck_seat_ledger_status CHECK (status IN ('RESERVED_PENDING','OCCUPIED','RELEASED')),
+                                     CONSTRAINT ck_seat_ledger_row_positive CHECK (seat_row > 0),
+                                     CONSTRAINT ck_seat_ledger_number_positive CHECK (seat_number > 0)
 );
 
 -- RN22 — nunca duas linhas OCCUPIED para o mesmo assento (defesa em profundidade além do lock Redis)
 CREATE UNIQUE INDEX uq_seat_ledger_occupied
-    ON inventory.seat_ledger (performance_id, section_id, seat_row, seat_number)
-    WHERE status = 'OCCUPIED';
+  ON inventory.seat_ledger (performance_id, section_id, seat_row, seat_number)
+  WHERE status = 'OCCUPIED';
 
 CREATE INDEX ix_seat_ledger_booking ON inventory.seat_ledger(booking_id); -- US-INV-06 (desalocação em lote por reserva)
 CREATE INDEX ix_seat_ledger_performance_section ON inventory.seat_ledger(performance_id, section_id); -- US-INV-01

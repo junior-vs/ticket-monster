@@ -129,23 +129,23 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Booking (agregado raiz)
 -- ============================================================
 CREATE TABLE booking.booking (
-    id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    performance_id           UUID NOT NULL,                 -- ref. lógica catalog.performance.id
-    contact_email            VARCHAR(255) NOT NULL,
-    owner_subject            VARCHAR(255) NULL,              -- claim `sub` do Keycloak (RN-NOVA-01), NULL em guest checkout
-    cancellation_code_hash   VARCHAR(255) NOT NULL,           -- hash do código (RN29 to-be) — nunca texto plano
-    status                   VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
-    total_amount             NUMERIC(10,2) NOT NULL,          -- RN19, snapshot calculado no use case
-    idempotency_key          VARCHAR(255) NOT NULL,           -- RN-NOVA-03
-    version                  INT NOT NULL DEFAULT 0,          -- optimistic lock
-    created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT uq_booking_idempotency_key UNIQUE (idempotency_key),
-    CONSTRAINT ck_booking_status CHECK (status IN ('PENDING','CONFIRMED','FAILED','CANCELLED')),
-    CONSTRAINT ck_booking_total_amount_non_negative CHECK (total_amount >= 0), -- RN19
-    CONSTRAINT ck_booking_email_format CHECK (
-        contact_email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
-    ) -- RN16
+                                 id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                 performance_id           UUID NOT NULL,                 -- ref. lógica catalog.performance.id
+                                 contact_email            VARCHAR(255) NOT NULL,
+                                 owner_subject            VARCHAR(255) NULL,              -- claim `sub` do Keycloak (RN-NOVA-01), NULL em guest checkout
+                                 cancellation_code_hash   VARCHAR(255) NOT NULL,           -- hash do código (RN29 to-be) — nunca texto plano
+                                 status                   VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+                                 total_amount             NUMERIC(10,2) NOT NULL,          -- RN19, snapshot calculado no use case
+                                 idempotency_key          VARCHAR(255) NOT NULL,           -- RN-NOVA-03
+                                 version                  INT NOT NULL DEFAULT 0,          -- optimistic lock
+                                 created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                 updated_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                 CONSTRAINT uq_booking_idempotency_key UNIQUE (idempotency_key),
+                                 CONSTRAINT ck_booking_status CHECK (status IN ('PENDING','CONFIRMED','FAILED','CANCELLED')),
+                                 CONSTRAINT ck_booking_total_amount_non_negative CHECK (total_amount >= 0), -- RN19
+                                 CONSTRAINT ck_booking_email_format CHECK (
+                                     contact_email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+                                     ) -- RN16
 );
 CREATE INDEX ix_booking_performance ON booking.booking(performance_id);
 CREATE INDEX ix_booking_owner_subject ON booking.booking(owner_subject) WHERE owner_subject IS NOT NULL; -- US-BOOK-10
@@ -155,15 +155,15 @@ CREATE INDEX ix_booking_contact_email ON booking.booking(contact_email); -- fall
 -- Ticket (item de linha da reserva)
 -- ============================================================
 CREATE TABLE booking.ticket (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id       UUID NOT NULL REFERENCES booking.booking(id) ON DELETE CASCADE, -- RN27 (cascata no cancelamento)
-    ticket_price_id  UUID NOT NULL,     -- ref. lógica inventory.ticket_price.id
-    section_id       UUID NOT NULL,     -- ref. lógica catalog.section.id (desnormalizado para consulta/relatório)
-    seat_row         INT NOT NULL,
-    seat_number      INT NOT NULL,
-    unit_price       NUMERIC(10,2) NOT NULL,   -- RN17, snapshot do preço no instante da compra
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT ck_ticket_unit_price_non_negative CHECK (unit_price >= 0)
+                                id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                booking_id       UUID NOT NULL REFERENCES booking.booking(id) ON DELETE CASCADE, -- RN27 (cascata no cancelamento)
+                                ticket_price_id  UUID NOT NULL,     -- ref. lógica inventory.ticket_price.id
+                                section_id       UUID NOT NULL,     -- ref. lógica catalog.section.id (desnormalizado para consulta/relatório)
+                                seat_row         INT NOT NULL,
+                                seat_number      INT NOT NULL,
+                                unit_price       NUMERIC(10,2) NOT NULL,   -- RN17, snapshot do preço no instante da compra
+                                created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                CONSTRAINT ck_ticket_unit_price_non_negative CHECK (unit_price >= 0)
 );
 CREATE INDEX ix_ticket_booking ON booking.ticket(booking_id);
 
@@ -171,7 +171,7 @@ CREATE INDEX ix_ticket_booking ON booking.ticket(booking_id);
 CREATE OR REPLACE FUNCTION booking.fn_ensure_min_one_ticket() RETURNS TRIGGER AS $$
 BEGIN
     IF (SELECT COUNT(*) FROM booking.ticket WHERE booking_id = OLD.booking_id) = 0
-       AND (SELECT status FROM booking.booking WHERE id = OLD.booking_id) NOT IN ('CANCELLED','FAILED') THEN
+        AND (SELECT status FROM booking.booking WHERE id = OLD.booking_id) NOT IN ('CANCELLED','FAILED') THEN
         RAISE EXCEPTION 'Booking % ficaria sem nenhum ticket (RN15)', OLD.booking_id;
     END IF;
     RETURN OLD;
@@ -187,13 +187,13 @@ CREATE CONSTRAINT TRIGGER trg_ticket_min_one
 -- Outbox (garantia transacional de publicação de evento)
 -- ============================================================
 CREATE TABLE booking.outbox_event (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    aggregate_type  VARCHAR(50)  NOT NULL DEFAULT 'Booking',
-    aggregate_id    UUID         NOT NULL REFERENCES booking.booking(id),
-    event_type      VARCHAR(100) NOT NULL,     -- BookingInitiatedEvent | BookingConfirmedEvent | BookingCancelledEvent | BookingFailedEvent
-    payload         JSONB        NOT NULL,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    published_at    TIMESTAMPTZ  NULL
+                                      id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                      aggregate_type  VARCHAR(50)  NOT NULL DEFAULT 'Booking',
+                                      aggregate_id    UUID         NOT NULL REFERENCES booking.booking(id),
+                                      event_type      VARCHAR(100) NOT NULL,     -- BookingInitiatedEvent | BookingConfirmedEvent | BookingCancelledEvent | BookingFailedEvent
+                                      payload         JSONB        NOT NULL,
+                                      created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+                                      published_at    TIMESTAMPTZ  NULL
 );
 -- Índice parcial: consulta do relay do Outbox busca apenas eventos ainda não publicados
 CREATE INDEX ix_outbox_pending ON booking.outbox_event(created_at) WHERE published_at IS NULL;

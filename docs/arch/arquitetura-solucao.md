@@ -1,13 +1,13 @@
 ---
 title: Arquitetura de Referência e Plano de Modernização — TicketMonster
 created: 20260724
-description: Este documento apresenta a especificação técnica e o projeto da nova arquitetura de referência para a modernização do sistema legado **TicketMonster**. O sistema foi redesenhado a partir do estado atual ("as-is") de um monolito Java EE 6 para um estado futuro ("to-be") baseado em microsserviços reativos com Quarkus, Java 25, mensageria reativa com Kafka, e cache distribuído com Redis.
+description: Este documento apresenta a especificação técnica e o projeto da nova arquitetura de referência para a modernização do sistema legado **TicketMonster**. O sistema foi redesenhado a partir do estado atual ("as-is") de um monolito Java EE 6 para um estado futuro ("to-be") baseado em microsserviços reativos com Quarkus, Java 21, mensageria reativa com Kafka, e cache distribuído com Redis.
 version:
   1.2: "este documento consolida (`merge`) os antigos `modernization_architecture.md` e `proposta_arquitetura_referencia.md` em um único arquivo, eliminando conteúdo duplicado entre eles. Onde os dois documentos originais divergiam em uma decisão técnica (não apenas repetiam conteúdo), a divergência foi formalizada em um ADR próprio (seção 21), e a alternativa descartada foi mantida documentada como parte do próprio ADR para não perder a informação. As três divergências identificadas: 
     1. **Padrão da Saga (checkout):** Coreografia vs. Orquestração — resolvido em **ADR 05**.
     2. **Propagação de token entre serviços:** Token Relay vs. Token Exchange — resolvido em **ADR 06**.
     3. **Nome do evento de resultado de alocação de assentos:** `SeatsReservedEvent` vs. `SeatsAllocatedEvent` — resolvido em **ADR 07**."
-    
+
 ---
 
 
@@ -18,7 +18,7 @@ version:
 
 ## 1. Resumo Executivo
 
-O projeto de modernização do **TicketMonster** visa transformar uma aplicação monolítica legada (Java EE 6, Backbone.js, EJB 3.1) em uma plataforma escalável, resiliente e de alto desempenho baseada em microsserviços na nuvem. A nova arquitetura utiliza o **Quarkus 3.27+** com **Java 25**, adotando programação reativa (Mutiny) e orientada a eventos (EDA).
+O projeto de modernização do **TicketMonster** visa transformar uma aplicação monolítica legada (Java EE 6, Backbone.js, EJB 3.1) em uma plataforma escalável, resiliente e de alto desempenho baseada em microsserviços na nuvem. A nova arquitetura utiliza o **Quarkus 3.27+** com **Java 21**, adotando programação reativa (Mutiny) e orientada a eventos (EDA).
 
 Os principais objetivos de negócio e técnicos alcançados com esta proposta são:
 1. **Escalabilidade Linear:** Eliminação de gargalos transacionais centralizados para suportar picos de carga (ex.: abertura de vendas de shows populares).
@@ -43,18 +43,18 @@ A análise por engenharia reversa do código-fonte legado revelou a seguinte est
 A arquitetura atual apresenta severas limitações técnicas que impedem o crescimento da aplicação:
 
 1. **Gargalo Crítico de Concorrência (Pessimistic Lock na Seção):**
-   * **Problema:** No [SeatAllocationService.java](file:///e:/develop/repos/java-projects/ticket-monster/demo/src/main/java/org/jboss/examples/ticketmonster/service/SeatAllocationService.java#L61), o método `retrieveSectionAllocationExclusively` realiza um lock pessimista de escrita (`LockModeType.PESSIMISTIC_WRITE`) na entidade `SectionAllocation`.
-   * **Impacto:** Como cada show e performance possui apenas um `SectionAllocation` por seção física, o banco de dados serializa o processo de alocação de poltronas de toda a seção. Se 100 usuários tentam comprar assentos diferentes na mesma seção, a vazão cai drasticamente, gerando timeouts de conexão e sobrecarga no SGBD.
+    * **Problema:** No [SeatAllocationService.java](file:///e:/develop/repos/java-projects/ticket-monster/demo/src/main/java/org/jboss/examples/ticketmonster/service/SeatAllocationService.java#L61), o método `retrieveSectionAllocationExclusively` realiza um lock pessimista de escrita (`LockModeType.PESSIMISTIC_WRITE`) na entidade `SectionAllocation`.
+    * **Impacto:** Como cada show e performance possui apenas um `SectionAllocation` por seção física, o banco de dados serializa o processo de alocação de poltronas de toda a seção. Se 100 usuários tentam comprar assentos diferentes na mesma seção, a vazão cai drasticamente, gerando timeouts de conexão e sobrecarga no SGBD.
 2. **Uso Indevido de Campos Grandes (`@Lob`) para Matriz de Assentos:**
-   * **Problema:** A ocupação das poltronas é gravada como um array serializado de bytes (`long[][] allocated`) no PostgreSQL/H2 (conforme visto em [SectionAllocation.java:110](file:///e:/develop/repos/java-projects/ticket-monster/demo/src/main/java/org/jboss/examples/ticketmonster/model/SectionAllocation.java#L110)).
-   * **Impacto:** Não é possível realizar consultas indexadas via SQL para descobrir poltronas livres. O microsserviço precisa carregar o blob inteiro na memória da JVM, desserializar o array, efetuar a lógica iterativa de busca de gap (`findFreeGapStart`), serializar a matriz alterada e gravá-la de volta. Isso consome CPU e banda de rede de forma desnecessária, além de arriscar a corrupção do estado da seção em falhas de escrita.
+    * **Problema:** A ocupação das poltronas é gravada como um array serializado de bytes (`long[][] allocated`) no PostgreSQL/H2 (conforme visto em [SectionAllocation.java:110](file:///e:/develop/repos/java-projects/ticket-monster/demo/src/main/java/org/jboss/examples/ticketmonster/model/SectionAllocation.java#L110)).
+    * **Impacto:** Não é possível realizar consultas indexadas via SQL para descobrir poltronas livres. O microsserviço precisa carregar o blob inteiro na memória da JVM, desserializar o array, efetuar a lógica iterativa de busca de gap (`findFreeGapStart`), serializar a matriz alterada e gravá-la de volta. Isso consome CPU e banda de rede de forma desnecessária, além de arriscar a corrupção do estado da seção em falhas de escrita.
 3. **Acoplamento em Memória dos Eventos (CDI Events):**
-   * **Problema:** Comunicação de negócios (criação e cancelamento de reservas) baseada em eventos do CDI dentro do mesmo processo JVM.
-   * **Impacto:** Impede a execução distribuída. Se a aplicação foi escalada para duas réplicas, os eventos disparados na Réplica A não serão escutados pelos consumidores na Réplica B.
+    * **Problema:** Comunicação de negócios (criação e cancelamento de reservas) baseada em eventos do CDI dentro do mesmo processo JVM.
+    * **Impacto:** Impede a execução distribuída. Se a aplicação foi escalada para duas réplicas, os eventos disparados na Réplica A não serão escutados pelos consumidores na Réplica B.
 4. **Acoplamento de Mídia Síncrono:**
-   * **Problema:** O `MediaManager` faz requisições HTTP externas síncronas bloqueando threads de I/O em caso de falha de download.
+    * **Problema:** O `MediaManager` faz requisições HTTP externas síncronas bloqueando threads de I/O em caso de falha de download.
 5. **Acoplamento das APIs de Administração e Públicas:**
-   * **Problema:** Duplicação de endpoints CRUD (ex.: `rest/bookings` vs `rest/forge/bookings`) sem validação de papéis de acesso (RBAC).
+    * **Problema:** Duplicação de endpoints CRUD (ex.: `rest/bookings` vs `rest/forge/bookings`) sem validação de papéis de acesso (RBAC).
 
 ---
 
@@ -63,23 +63,23 @@ A arquitetura atual apresenta severas limitações técnicas que impedem o cresc
 Para o novo sistema reestruturado em DDD, o modelo de domínio foi decomposto em Agregados coesos, definindo responsabilidades claras:
 
 * **Agregado Event (Catalog Context):**
-  * **Root Entity:** `Event` (Identificador único, nome exclusivo, descrição, categoria associada).
-  * **Value Objects:** `EventCategory` (classificação), `MediaItem` (detalhes da imagem/banner).
+    * **Root Entity:** `Event` (Identificador único, nome exclusivo, descrição, categoria associada).
+    * **Value Objects:** `EventCategory` (classificação), `MediaItem` (detalhes da imagem/banner).
 * **Agregado Venue (Catalog Context):**
-  * **Root Entity:** `Venue` (capacidade total, nome único).
-  * **Entities:** `Section` (setor físico com quantidade de linhas e colunas).
-  * **Value Objects:** `Address` (endereço físico do local).
+    * **Root Entity:** `Venue` (capacidade total, nome único).
+    * **Entities:** `Section` (setor físico com quantidade de linhas e colunas).
+    * **Value Objects:** `Address` (endereço físico do local).
 * **Agregado Show (Scheduling Context):**
-  * **Root Entity:** `Show` (associação única entre um `Event` e um `Venue`).
-  * **Entities:** `Performance` (data e hora específicas de execução do Show).
+    * **Root Entity:** `Show` (associação única entre um `Event` e um `Venue`).
+    * **Entities:** `Performance` (data e hora específicas de execução do Show).
 * **Agregado Inventory Allocation (Inventory Context):**
-  * **Root Entity:** `PerformanceInventory` (representa o estado atual de ocupação e reservas).
-  * **Entities:** `SeatStatus` (status individual de cada assento: FREE, PENDING_LOCK, OCCUPIED, com timestamp e ID do comprador).
-  * **Value Objects:** `Seat` (fileira e número do assento físico).
+    * **Root Entity:** `PerformanceInventory` (representa o estado atual de ocupação e reservas).
+    * **Entities:** `SeatStatus` (status individual de cada assento: FREE, PENDING_LOCK, OCCUPIED, com timestamp e ID do comprador).
+    * **Value Objects:** `Seat` (fileira e número do assento físico).
 * **Agregado Booking (Sales Context):**
-  * **Root Entity:** `Booking` (compra contendo status PENDING, CONFIRMED, CANCELLED, e-mail de contato, código de cancelamento e valor total).
-  * **Entities:** `Ticket` (bilhete gerado que vincula um assento de uma seção a um preço cobrado).
-  * **Value Objects:** `TicketCategory` (Adulto, Estudante), `TicketPrice` (tabela de preços associando seção e show).
+    * **Root Entity:** `Booking` (compra contendo status PENDING, CONFIRMED, CANCELLED, e-mail de contato, código de cancelamento e valor total).
+    * **Entities:** `Ticket` (bilhete gerado que vincula um assento de uma seção a um preço cobrado).
+    * **Value Objects:** `TicketCategory` (Adulto, Estudante), `TicketPrice` (tabela de preços associando seção e show).
 
 ---
 
@@ -202,40 +202,40 @@ Todos os microsserviços compartilham o mesmo conjunto-base de extensões, garan
 
 #### Booking Service (`/api/v1/bookings`)
 * **POST `/api/v1/bookings`:** Inicia uma nova reserva.
-  * *Request Body:*
-    ```json
-    {
-      "performanceId": 45,
-      "email": "cliente@email.com",
-      "ticketRequests": [
-        { "ticketPriceId": 102, "quantity": 2 }
-      ]
-    }
-    ```
-  * *Response (202 Accepted):*
-    ```json
-    {
-      "bookingId": "c53d9e8d-d6a1-432d-9eb5-8e3b5e40a1b0",
-      "status": "PROCESSING",
-      "createdAt": "2026-07-22T10:00:00Z"
-    }
-    ```
+    * *Request Body:*
+      ```json
+      {
+        "performanceId": 45,
+        "email": "cliente@email.com",
+        "ticketRequests": [
+          { "ticketPriceId": 102, "quantity": 2 }
+        ]
+      }
+      ```
+    * *Response (202 Accepted):*
+      ```json
+      {
+        "bookingId": "c53d9e8d-d6a1-432d-9eb5-8e3b5e40a1b0",
+        "status": "PROCESSING",
+        "createdAt": "2026-07-22T10:00:00Z"
+      }
+      ```
 * **GET `/api/v1/bookings/{id}`:** Consulta o status atual da reserva.
 * **DELETE `/api/v1/bookings/{id}`:** Solicita o cancelamento da reserva e liberação dos ingressos.
 
 #### Inventory Service (`/api/v1/performances/{performanceId}/availability`)
 * **GET `/api/v1/performances/{performanceId}/availability`:** Exibe mapa de assentos livres e ocupados.
-  * *Query Params:* `sectionId=12`
-  * *Response (200 OK):*
-    ```json
-    {
-      "sectionId": 12,
-      "availableSeats": [
-        { "row": 1, "number": 5 },
-        { "row": 1, "number": 6 }
-      ]
-    }
-    ```
+    * *Query Params:* `sectionId=12`
+    * *Response (200 OK):*
+      ```json
+      {
+        "sectionId": 12,
+        "availableSeats": [
+          { "row": 1, "number": 5 },
+          { "row": 1, "number": 6 }
+        ]
+      }
+      ```
 
 ### Padrão de Erro (RFC 7807)
 Erros de validação e negócios seguem a especificação de *Problem Details*:
@@ -286,17 +286,17 @@ CREATE INDEX idx_perf_sec_avail ON seat_allocation(performance_id, section_id) W
 O Redis é peça fundamental para a escalabilidade horizontal e resiliência:
 
 1. **Cache de Catálogo (Cache-Aside):**
-   * Chave: `catalog:event:{id}` e `catalog:shows:performance:{id}`.
-   * TTL: 1 hora (600 segundos para eventos populares, invalidado via eventos de alteração de catálogo).
+    * Chave: `catalog:event:{id}` e `catalog:shows:performance:{id}`.
+    * TTL: 1 hora (600 segundos para eventos populares, invalidado via eventos de alteração de catálogo).
 2. **Controle de Ocupação Temporária (Locks Rápidos):**
-   * Quando o cliente seleciona assentos, o `microservice-inventory` cria chaves de bloqueio temporário no Redis:
-     * Chave: `lock:seat:{performanceId}:{sectionId}:{row}:{number}`.
-     * Valor: `bookingId`.
-     * TTL: 60 segundos (tempo limite para finalização do pagamento/checkout).
-   * **Benefício:** A verificação de disponibilidade e reserva temporária é feita em Redis de forma atômica (usando transações Redis ou scripts Lua), sem tocar no banco de dados relacional nesta etapa.
+    * Quando o cliente seleciona assentos, o `microservice-inventory` cria chaves de bloqueio temporário no Redis:
+        * Chave: `lock:seat:{performanceId}:{sectionId}:{row}:{number}`.
+        * Valor: `bookingId`.
+        * TTL: 60 segundos (tempo limite para finalização do pagamento/checkout).
+    * **Benefício:** A verificação de disponibilidade e reserva temporária é feita em Redis de forma atômica (usando transações Redis ou scripts Lua), sem tocar no banco de dados relacional nesta etapa.
 3. **Idempotência de Compras:**
-   * Evita duplicidade de compras pelo clique duplo do usuário.
-   * Chave: `idempotency:booking:{hash_requisicao}` com TTL de 30 segundos.
+    * Evita duplicidade de compras pelo clique duplo do usuário.
+    * Chave: `idempotency:booking:{hash_requisicao}` com TTL de 30 segundos.
 
 ---
 
@@ -354,11 +354,11 @@ Para evitar a perda de mensagens se o Kafka falhar durante a gravação no banco
 O Quarkus utiliza o framework reativo **Mutiny** de forma nativa para todas as operações críticas:
 
 * **Não Bloqueante (Non-blocking I/O):**
-  * APIs REST expostas com RESTEasy Reactive.
-  * Drivers de banco reativos (`quarkus-reactive-pg-client`). As conexões não bloqueiam a thread do Event Loop da CPU.
+    * APIs REST expostas com RESTEasy Reactive.
+    * Drivers de banco reativos (`quarkus-reactive-pg-client`). As conexões não bloqueiam a thread do Event Loop da CPU.
 * **Uso de Uni e Multi:**
-  * `Uni<Booking>` representa um resultado assíncrono único (ex.: buscar reserva por ID).
-  * `Multi<String>` representa fluxos contínuos de dados (ex.: logs do Bot ou telemetria em tempo real).
+    * `Uni<Booking>` representa um resultado assíncrono único (ex.: buscar reserva por ID).
+    * `Multi<String>` representa fluxos contínuos de dados (ex.: logs do Bot ou telemetria em tempo real).
 * **Exemplo de Código Reativo (Mutiny):**
   ```java
   public Uni<Response> createBooking(BookingRequest request) {
@@ -385,16 +385,16 @@ O Quarkus utiliza o framework reativo **Mutiny** de forma nativa para todas as o
 A infraestrutura de observabilidade é implementada com **OpenTelemetry** integrada à Stack LGTM (Grafana, Loki, Tempo, Mimir):
 
 * **Tracing Distribuído:**
-  * O API Gateway gera o `traceparent` (Correlation ID) baseado no padrão W3C.
-  * O `traceparent` é propagado em todas as chamadas HTTP e nos metadados (headers) das mensagens do Kafka.
-  * Permite rastrear uma compra desde o clique no browser até a confirmação do inventário e gravação no banco.
+    * O API Gateway gera o `traceparent` (Correlation ID) baseado no padrão W3C.
+    * O `traceparent` é propagado em todas as chamadas HTTP e nos metadados (headers) das mensagens do Kafka.
+    * Permite rastrear uma compra desde o clique no browser até a confirmação do inventário e gravação no banco.
 * **Métricas Exportadas (Prometheus):**
-  * Ingressos reservados por segundo.
-  * Taxa de falhas de alocação de assentos.
-  * Latência das transações de banco reativas.
-  * Tamanho das filas de mensagens do Kafka.
+    * Ingressos reservados por segundo.
+    * Taxa de falhas de alocação de assentos.
+    * Latência das transações de banco reativas.
+    * Tamanho das filas de mensagens do Kafka.
 * **Health Checks:**
-  * `/q/health/live` e `/q/health/ready` expostos pelo Quarkus SmallRye Health para indicar o status da aplicação ao Kubernetes.
+    * `/q/health/live` e `/q/health/ready` expostos pelo Quarkus SmallRye Health para indicar o status da aplicação ao Kubernetes.
 
 ---
 
@@ -414,9 +414,9 @@ O sistema adota **Keycloak** como *Identity Provider* (IdP) e autoridade central
   | `catalog-service`, `inventory-service`, `booking-service`, `telemetry-service` | Confidencial, `Client Credentials` | Autenticação serviço-a-serviço (ex.: chamada síncrona `booking → catalog` para buscar preço; Bot criando reservas via `booking-service`). |
 
 * **Realm Roles (RBAC):**
-  * `ROLE_CUSTOMER` — comprador autenticado.
-  * `ROLE_ADMIN` — administrador do painel, acesso de escrita a todos os cadastros.
-  * `ROLE_SERVICE` — chamadas internas serviço-a-serviço (via Client Credentials), sem contexto de usuário final.
+    * `ROLE_CUSTOMER` — comprador autenticado.
+    * `ROLE_ADMIN` — administrador do painel, acesso de escrita a todos os cadastros.
+    * `ROLE_SERVICE` — chamadas internas serviço-a-serviço (via Client Credentials), sem contexto de usuário final.
 
   *(Evolução futura opcional: quebrar `ROLE_ADMIN` em roles compostas por client — `catalog:write`, `inventory:write`, `booking:write` — para *least privilege* granular. Mantido como `ROLE_ADMIN` único nesta fase para paridade com o legado, que já tratava o admin como acesso total.)*
 
@@ -590,13 +590,13 @@ public class CancelBookingUseCase {
 A implantação foi desenhada para rodar em ambientes baseados em **Kubernetes** ou **Red Hat OpenShift**:
 
 * **Imagens de Containers Otimizadas:**
-  * Builds nativos via GraalVM gerando imagens Docker de poucos megabytes com tempo de inicialização (Startup Time) inferior a 50ms, facilitando o Auto Scaling.
+    * Builds nativos via GraalVM gerando imagens Docker de poucos megabytes com tempo de inicialização (Startup Time) inferior a 50ms, facilitando o Auto Scaling.
 * **Configuração 12-Factor:** variáveis de ambiente/ConfigMaps, sem estado em disco local — elimina o cache em arquivo (`tmpDir`) do `MediaManager` legado, substituído por object storage (S3/MinIO).
 * **Kubernetes HPA (Horizontal Pod Autoscaler):**
-  * Escalabilidade configurada para reagir a picos de requisições por segundo (RPS) e lag de consumo de mensagens no Kafka.
+    * Escalabilidade configurada para reagir a picos de requisições por segundo (RPS) e lag de consumo de mensagens no Kafka.
 * **Estratégias de Deploy:**
-  * **Rolling Update:** Utilizada por padrão para atualizações de rotina sem indisponibilidade.
-  * **Canary Deploy:** Utilizada na liberação do microsserviço de checkout (`microservice-booking`), direcionando 5% do tráfego para validar o comportamento antes da atualização completa.
+    * **Rolling Update:** Utilizada por padrão para atualizações de rotina sem indisponibilidade.
+    * **Canary Deploy:** Utilizada na liberação do microsserviço de checkout (`microservice-booking`), direcionando 5% do tráfego para validar o comportamento antes da atualização completa.
 
 ---
 
@@ -801,69 +801,69 @@ sequenceDiagram
 ### ADR 01: Migração do Monolito Java EE 6 para Quarkus 3.27+
 * **Status:** Aprovado.
 * **Contexto:** O monolito legado depende de servidores JBoss antigos e Java EE 6, resultando em tempos altos de startup, alto consumo de memória e impossibilidade de escala reativa.
-* **Decisão:** Adotar Quarkus 3.27+ com Java 25 como framework base de microsserviços.
+* **Decisão:** Adotar Quarkus 3.27+ com Java 21 como framework base de microsserviços.
 * **Consequências:**
-  * *Positivas:* Menor pegada de memória, inicialização quase instantânea, suporte excelente a desenvolvimento reativo (Mutiny) e compilação nativa.
-  * *Negativas:* Necessidade de curva de aprendizado para a equipe em programação reativa.
+    * *Positivas:* Menor pegada de memória, inicialização quase instantânea, suporte excelente a desenvolvimento reativo (Mutiny) e compilação nativa.
+    * *Negativas:* Necessidade de curva de aprendizado para a equipe em programação reativa.
 
 ### ADR 02: Substituição de Lock Pessimista por Locks Distribuídos com Redis
 * **Status:** Aprovado.
 * **Contexto:** O sistema original executava lock pessimista direto no banco na tabela inteira de ocupação (`SectionAllocation`), serializando as reservas.
 * **Decisão:** Mapear os assentos de forma individualizada e realizar o bloqueio concorrente inicial de 60 segundos no Redis usando operações atômicas baseadas em chaves por assento.
 * **Consequências:**
-  * *Positivas:* Vazão de concorrência massiva. Vários usuários podem comprar poltronas da mesma seção ao mesmo tempo sem bloquear a tabela no PostgreSQL.
-  * *Negativas:* Introdução de dependência do Redis no fluxo crítico de checkout.
+    * *Positivas:* Vazão de concorrência massiva. Vários usuários podem comprar poltronas da mesma seção ao mesmo tempo sem bloquear a tabela no PostgreSQL.
+    * *Negativas:* Introdução de dependência do Redis no fluxo crítico de checkout.
 
 ### ADR 03: Decomposição de Banco de Dados (Database per Service)
 * **Status:** Aprovado.
 * **Contexto:** A persistência legada utiliza um único datasource compartilhado por todas as operações de CRUD.
 * **Decisão:** Implementar bancos de dados independentes (PostgreSQL) para cada microsserviço (Catalog, Inventory, Booking e Telemetry).
 * **Consequências:**
-  * *Positivas:* Desacoplamento físico completo, permitindo alterações de schema em um serviço sem afetar os demais.
-  * *Negativas:* Necessidade de orquestração eventual de dados (Sagas) para garantir consistência.
+    * *Positivas:* Desacoplamento físico completo, permitindo alterações de schema em um serviço sem afetar os demais.
+    * *Negativas:* Necessidade de orquestração eventual de dados (Sagas) para garantir consistência.
 
 ### ADR 04: Adoção do Padrão Saga Coreografada para Consistência entre Booking e Inventory
 * **Status:** Aprovado.
 * **Contexto:** A criação de uma reserva exige alteração de estado em Booking (criação do ticket) e em Inventory (marcação de assento como ocupado). Com bancos separados, a consistência em duas fases (2PC) degradaria o desempenho.
 * **Decisão:** Adotar Saga Coreografada com Apache Kafka como broker de mensageria de alta vazão.
 * **Consequências:**
-  * *Positivas:* Acoplamento zero de runtime. Alta resiliência.
-  * *Negativas:* Aumento da complexidade de depuração e necessidade de lidar com consistência eventual nas telas de frontend.
+    * *Positivas:* Acoplamento zero de runtime. Alta resiliência.
+    * *Negativas:* Aumento da complexidade de depuração e necessidade de lidar com consistência eventual nas telas de frontend.
 
 ### ADR 05: Coreografia (não Orquestração) como Estilo de Saga do Checkout
 * **Status:** Aprovado.
 * **Contexto:** Durante a elaboração dos documentos de arquitetura, surgiram duas descrições divergentes para o mesmo fluxo de checkout: uma definindo Saga **Coreografada** (cada serviço publica e reage a eventos de forma descentralizada, sem coordenador central) e outra descrevendo Saga **Orquestrada** (um orquestrador central comanda `booking` → `inventory` → confirmação, semelhante ao fluxo transacional único hoje existente em `BookingService.createBooking` no legado). Os diagramas de sequência produzidos em ambos os casos já implementavam, na prática, o fluxo coreografado — apenas o texto e a tabela de patterns de um dos documentos rotulavam a decisão como "orquestrada", criando uma contradição terminológica entre documento e diagrama, e entre os dois documentos de arquitetura.
 * **Alternativas consideradas:**
-  1. **Coreografia via Kafka** (cada serviço publica eventos de domínio e reage a eventos de outros serviços; nenhum componente central conhece o fluxo inteiro).
-  2. **Orquestração** (um Orchestrator/Process Manager dedicado — dentro do próprio `microservice-booking` ou como componente separado — invoca `inventory` e decide os próximos passos, mantendo o estado da Saga centralizado).
+    1. **Coreografia via Kafka** (cada serviço publica eventos de domínio e reage a eventos de outros serviços; nenhum componente central conhece o fluxo inteiro).
+    2. **Orquestração** (um Orchestrator/Process Manager dedicado — dentro do próprio `microservice-booking` ou como componente separado — invoca `inventory` e decide os próximos passos, mantendo o estado da Saga centralizado).
 * **Decisão:** Manter **Coreografia**, consistente com ADR 04 e com os diagramas de sequência já publicados (seção 11 e seção 18.3). A Coreografia foi preferida porque: (a) o número de participantes da Saga é pequeno (2 serviços — `booking` e `inventory` — mais `telemetry` como consumidor passivo), cenário em que a Coreografia não sofre tanto do problema de "explosão de eventos" que a torna difícil de depurar em Sagas com muitos participantes; (b) evita introduzir um componente central adicional (o Orquestrador) que precisaria de seu próprio armazenamento de estado e se tornaria um novo ponto de acoplamento; (c) mantém o padrão Outbox já decidido em ADR 04 funcionando de forma natural em ambas as pontas, sem necessidade de um serviço extra para orquestrar.
 * **Consequências:**
-  * *Positivas:* Nenhum componente novo a operar; time de arquitetura já validou o fluxo coreografado nos dois diagramas de sequência existentes; menor superfície de acoplamento.
-  * *Negativas:* Se o número de serviços participantes do checkout crescer (ex.: adicionar `payment-service`, `notification-service`), a Coreografia pode se tornar difícil de rastrear sem uma ferramenta de correlação de Saga dedicada — o rastreamento distribuído via OpenTelemetry (seção 15) é o principal mitigante hoje adotado; se a complexidade aumentar, revisitar esta decisão em favor de Orquestração explícita é uma opção documentada, não descartada.
+    * *Positivas:* Nenhum componente novo a operar; time de arquitetura já validou o fluxo coreografado nos dois diagramas de sequência existentes; menor superfície de acoplamento.
+    * *Negativas:* Se o número de serviços participantes do checkout crescer (ex.: adicionar `payment-service`, `notification-service`), a Coreografia pode se tornar difícil de rastrear sem uma ferramenta de correlação de Saga dedicada — o rastreamento distribuído via OpenTelemetry (seção 15) é o principal mitigante hoje adotado; se a complexidade aumentar, revisitar esta decisão em favor de Orquestração explícita é uma opção documentada, não descartada.
 
 ### ADR 06: Token Relay (não Token Exchange) para Propagação de Identidade entre Serviços
 * **Status:** Aprovado.
 * **Contexto:** Um dos documentos de arquitetura definia que o mesmo JWT emitido pelo Keycloak para o usuário final é repassado sem alteração (*token relay*) do API Gateway até o microsserviço que efetivamente processa a requisição, sendo revalidado localmente em cada camada. O outro documento propunha usar **Token Exchange** (RFC 8693) no Gateway, trocando o token do usuário por um token de escopo reduzido antes de repassá-lo às chamadas internas, como mecanismo de *least privilege*. As duas abordagens não são combináveis como estavam descritas — era necessário escolher uma linha de base.
 * **Alternativas consideradas:**
-  1. **Token Relay:** o Gateway valida o JWT do usuário e o repassa inalterado; cada microsserviço revalida a assinatura via JWKS e aplica sua própria checagem de role/posse.
-  2. **Token Exchange (RFC 8693):** o Gateway troca o token do usuário por um novo token, com escopo/audiência reduzidos, antes de repassar a chamadas internas.
+    1. **Token Relay:** o Gateway valida o JWT do usuário e o repassa inalterado; cada microsserviço revalida a assinatura via JWKS e aplica sua própria checagem de role/posse.
+    2. **Token Exchange (RFC 8693):** o Gateway troca o token do usuário por um novo token, com escopo/audiência reduzidos, antes de repassar a chamadas internas.
 * **Decisão:** Adotar **Token Relay** como linha de base para esta fase da modernização, mantendo Token Exchange documentado como evolução futura (ver nota em seção 15.3).
 * **Justificativa:** Token Relay é significativamente mais simples de implementar, operar e depurar — não exige uma chamada adicional síncrona ao Keycloak a cada requisição (o Token Exchange introduziria essa latência extra no caminho crítico do checkout) nem uma política de mapeamento de escopos por rota interna, que ainda não existe formalizada no time. Como a matriz de autorização por endpoint (seção 15.4) e a checagem de posse no *use case* (`sub == booking.ownerId`) já cobrem os principais riscos de autorização identificados no legado (BOLA, Broken Function Level Authorization — seção 15.4.4), o ganho incremental de segurança do Token Exchange não justifica, nesta fase, a complexidade operacional adicional.
 * **Consequências:**
-  * *Positivas:* Menor latência (sem chamada extra ao IdP por requisição interna), menor complexidade operacional, mais fácil de depurar (o mesmo token aparece em todos os logs/traces de uma requisição).
-  * *Negativas:* Um microsserviço interno comprometido recebe o token completo do usuário (mesmo escopo do Gateway), não um token de escopo reduzido — mitigado por mTLS entre serviços (seção 15.6) e pela checagem de posse feita em cada *use case*, mas é uma superfície de risco maior do que a alternativa. Revisitar esta decisão (migrar para Token Exchange) é recomendado caso o número de chamadas síncronas serviço-a-serviço cresça ou caso surjam requisitos de compliance que exijam escopo mínimo comprovável por chamada.
+    * *Positivas:* Menor latência (sem chamada extra ao IdP por requisição interna), menor complexidade operacional, mais fácil de depurar (o mesmo token aparece em todos os logs/traces de uma requisição).
+    * *Negativas:* Um microsserviço interno comprometido recebe o token completo do usuário (mesmo escopo do Gateway), não um token de escopo reduzido — mitigado por mTLS entre serviços (seção 15.6) e pela checagem de posse feita em cada *use case*, mas é uma superfície de risco maior do que a alternativa. Revisitar esta decisão (migrar para Token Exchange) é recomendado caso o número de chamadas síncronas serviço-a-serviço cresça ou caso surjam requisitos de compliance que exijam escopo mínimo comprovável por chamada.
 
 ### ADR 07: Padronização de Nomenclatura do Evento de Resultado de Alocação de Assentos
 * **Status:** Aprovado.
 * **Contexto:** Nenhuma das especificações de microsserviço (`microservice-inventory_spec.md`) define o nome do evento publicado pelo `microservice-inventory` ao concluir (com sucesso ou falha) uma tentativa de alocação de assentos disparada por `BookingInitiatedEvent` — apenas os eventos consumidos por `inventory` estão nomeados nas specs. Como consequência, os dois documentos de arquitetura, elaborados em momentos diferentes, adotaram nomes distintos para o mesmo evento: `SeatsReservedEvent`/`SeatsReservationFailedEvent` em um, `SeatsAllocatedEvent`/`SeatsAllocationFailedEvent` no outro. Nomes de evento divergentes para o mesmo conceito de domínio, se não unificados antes da implementação, gerariam consumidores (`microservice-booking`, `microservice-telemetry`) escritos contra contratos de mensageria inconsistentes.
 * **Alternativas consideradas:**
-  1. `SeatsReservedEvent` / `SeatsReservationFailedEvent` — verbo "reservar", alinhado à terminologia usada no restante do documento base (`seat_allocation`/`RESERVED_PENDING` no modelo de dados de `microservice-inventory_data_model.md`).
-  2. `SeatsAllocatedEvent` / `SeatsAllocationFailedEvent` — verbo "alocar", alinhado ao nome do próprio microsserviço (`microservice-inventory`) e de sua classe de domínio principal no legado (`SeatAllocationService`, `SectionAllocation`).
+    1. `SeatsReservedEvent` / `SeatsReservationFailedEvent` — verbo "reservar", alinhado à terminologia usada no restante do documento base (`seat_allocation`/`RESERVED_PENDING` no modelo de dados de `microservice-inventory_data_model.md`).
+    2. `SeatsAllocatedEvent` / `SeatsAllocationFailedEvent` — verbo "alocar", alinhado ao nome do próprio microsserviço (`microservice-inventory`) e de sua classe de domínio principal no legado (`SeatAllocationService`, `SectionAllocation`).
 * **Decisão:** Padronizar em `SeatsReservedEvent` / `SeatsReservationFailedEvent`.
 * **Justificativa:** A escolha é primariamente uma questão de convenção, não de mérito técnico — ambas as opções são semanticamente corretas. Optou-se pela primeira por já ser a nomenclatura usada nos diagramas de sequência do documento-base (seção 11 e seção 18.3), reduzindo o volume de reedição de diagramas Mermaid já revisados, e por refletir melhor o estado transitório de "reserva temporária de 60s" (RN23) que antecede a ocupação definitiva — "alocar" no domínio já é usado para o resultado final persistido em `seat_ledger`/`seat_allocation` (status `OCCUPIED`), o que poderia causar ambiguidade entre o evento intermediário e o estado final caso ambos usassem "Allocated".
 * **Consequências:**
-  * *Positivas:* Contrato de mensageria único e não ambíguo entre `booking`, `inventory` e `telemetry`; nomenclatura consistente com o Schema Registry (seção 19) a ser adotado no Kafka.
-  * *Negativas:* Nenhuma relevante — é uma decisão de nomenclatura sem impacto arquitetural; o custo é apenas de padronização textual nos artefatos já produzidos.
+    * *Positivas:* Contrato de mensageria único e não ambíguo entre `booking`, `inventory` e `telemetry`; nomenclatura consistente com o Schema Registry (seção 19) a ser adotado no Kafka.
+    * *Negativas:* Nenhuma relevante — é uma decisão de nomenclatura sem impacto arquitetural; o custo é apenas de padronização textual nos artefatos já produzidos.
 
 ---
 
@@ -880,7 +880,7 @@ sequenceDiagram
 ```
 
 ### Quick Wins (Primeiros 30 dias)
-* Configuração do repositório base com Quarkus, Gradle e Java 25.
+* Configuração do repositório base com Quarkus, Gradle e Java 21.
 * Implantação do Keycloak e migração do modelo de segurança básico (autenticação JWT).
 * Criação do ambiente Docker Compose local com Postgres, Redis e Kafka.
 
@@ -903,14 +903,14 @@ sequenceDiagram
 ## 23. Riscos
 
 1. **Complexidade de Consistência Eventual:**
-   * *Risco:* O cliente pode visualizar uma confirmação de pagamento pendente enquanto a Saga ainda está confirmando os assentos no Kafka.
-   * *Mitigação:* O frontend deve se conectar ao WebSocket do `microservice-telemetry` ou realizar polling rápido de `/api/v1/bookings/{id}` para atualizar a tela de forma reativa assim que o evento `BookingConfirmedEvent` for disparado.
+    * *Risco:* O cliente pode visualizar uma confirmação de pagamento pendente enquanto a Saga ainda está confirmando os assentos no Kafka.
+    * *Mitigação:* O frontend deve se conectar ao WebSocket do `microservice-telemetry` ou realizar polling rápido de `/api/v1/bookings/{id}` para atualizar a tela de forma reativa assim que o evento `BookingConfirmedEvent` for disparado.
 2. **Latência de Mensageria (Kafka Lag):**
-   * *Risco:* Lentidão no processamento dos consumidores do Kafka pode estourar o TTL de 60 segundos do lock no Redis.
-   * *Mitigação:* Configurar alarmes de monitoramento de Kafka lag e habilitar auto-scaling automático dos pods do `microservice-inventory`.
+    * *Risco:* Lentidão no processamento dos consumidores do Kafka pode estourar o TTL de 60 segundos do lock no Redis.
+    * *Mitigação:* Configurar alarmes de monitoramento de Kafka lag e habilitar auto-scaling automático dos pods do `microservice-inventory`.
 3. **Gerenciamento de Rede e Falhas Parciais:**
-   * *Risco:* Perda de conectividade com o Redis de locks pode impossibilitar a realização de qualquer compra.
-   * *Mitigação:* Configurar o cluster Redis em modo Alta Disponibilidade (Sentinel ou Redis Cluster) com replicação automática.
+    * *Risco:* Perda de conectividade com o Redis de locks pode impossibilitar a realização de qualquer compra.
+    * *Mitigação:* Configurar o cluster Redis em modo Alta Disponibilidade (Sentinel ou Redis Cluster) com replicação automática.
 
 ---
 

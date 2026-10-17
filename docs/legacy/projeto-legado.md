@@ -59,17 +59,17 @@ O sistema legado foi desenvolvido sob a especificação **Java EE 6 (Full Profil
 
 ## 2. Módulos Existentes do Legado
 1. **Módulo Web Front-End Comprador (Desktop/Mobile):**
-   * Localizado em `demo/src/main/webapp/resources`.
-   * SPA baseada em Backbone.js, RequireJS para carregamento assíncrono de módulos, Underscore.js para templates HTML estruturados, e jQuery Mobile para estilização responsiva adaptada a celulares.
+  * Localizado em `demo/src/main/webapp/resources`.
+  * SPA baseada em Backbone.js, RequireJS para carregamento assíncrono de módulos, Underscore.js para templates HTML estruturados, e jQuery Mobile para estilização responsiva adaptada a celulares.
 2. **Módulo Web Front-End Administrativo:**
-   * Localizado em `demo/src/main/webapp/admin`.
-   * SPA construída com AngularJS 1.x e Bootstrap CSS, gerada automaticamente pelo JBoss Forge.
+  * Localizado em `demo/src/main/webapp/admin`.
+  * SPA construída com AngularJS 1.x e Bootstrap CSS, gerada automaticamente pelo JBoss Forge.
 3. **Módulo Mobile Nativo Híbrido:**
-   * Localizado em `cordova/`.
-   * Projeto para encapsulamento da interface pública em aplicações nativas Android/iOS via Apache Cordova.
+  * Localizado em `cordova/`.
+  * Projeto para encapsulamento da interface pública em aplicações nativas Android/iOS via Apache Cordova.
 4. **Módulo de Serviços e Negócio (Backend JAR/WAR):**
-   * Localizado em `demo/src/main/java/org/jboss/examples/ticketmonster`.
-   * Agrupa os pacotes de modelo (`model`), endpoints REST (`rest`), serviços corporativos (`service`), DTOs gerados para o admin (`rest/dto`) e utilitários (`util`).
+  * Localizado em `demo/src/main/java/org/jboss/examples/ticketmonster`.
+  * Agrupa os pacotes de modelo (`model`), endpoints REST (`rest`), serviços corporativos (`service`), DTOs gerados para o admin (`rest/dto`) e utilitários (`util`).
 
 ## 3. Atores do Sistema
 * **Visitante / Comprador (Não Autenticado):** Usuário do canal de vendas público. Navega no catálogo, visualiza disponibilidade e executa reservas de ingressos.
@@ -282,209 +282,209 @@ O sistema utiliza eventos do **CDI (Contexts and Dependency Injection)** em mem�
 ### 16.1 Fluxo de Criação de Reserva de Ingressos (Booking)
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Visitante as Visitante (Browser)
-    participant REST as BookingService (REST)
-    participant SAS as SeatAllocationService (EJB)
-    participant DB as Banco de Dados
-    participant CDI as Event<Booking> (CDI)
+  autonumber
+  actor Visitante as Visitante (Browser)
+  participant REST as BookingService (REST)
+  participant SAS as SeatAllocationService (EJB)
+  participant DB as Banco de Dados
+  participant CDI as Event<Booking> (CDI)
 
-    Visitante->>REST: POST /rest/bookings (BookingRequest JSON)
-    activate REST
-    REST->>DB: Busca Performance & Preços de Ingressos
-    DB-->>REST: Retorna Entidades
-    REST->>REST: Ordena Seções para evitar Deadlock
-    
-    loop Para cada Seção solicitada
-        REST->>SAS: allocateSeats(Section, Performance, quantidade, contiguous=true)
-        activate SAS
-        SAS->>DB: Busca SectionAllocation (Pessimistic Lock - WRITE)
-        DB-->>SAS: Retorna SectionAllocation
-        SAS->>SAS: Procura assentos livres na matriz
-        alt Assentos disponíveis encontrados
-            SAS->>SAS: Reserva assentos marcando timestamp de expiração (currentTime + 60s)
-            SAS-->>REST: Retorna AllocatedSeats
-        else Assentos insuficientes
-            SAS-->>REST: Retorna lista vazia (falha)
-        end
-        deactivate SAS
-    end
+  Visitante->>REST: POST /rest/bookings (BookingRequest JSON)
+  activate REST
+  REST->>DB: Busca Performance & Preços de Ingressos
+  DB-->>REST: Retorna Entidades
+  REST->>REST: Ordena Seções para evitar Deadlock
 
-    alt Sucesso em todas as Seções
-        loop Para cada Seção
-            REST->>SAS: markOccupied(seats)
-            Note over REST,SAS: Grava -1 (ocupado permanente) na matriz
-        end
-        REST->>DB: Persiste Booking e Tickets (Cascade)
-        REST->>CDI: fire(booking)
-        REST-->>Visitante: Retorna HTTP 200 (Booking JSON)
-    else Falha de alocação em qualquer Seção
-        Note over REST: Desfaz as alterações (Rollback)
-        REST-->>Visitante: Retorna HTTP 400 Bad Request
+  loop Para cada Seção solicitada
+    REST->>SAS: allocateSeats(Section, Performance, quantidade, contiguous=true)
+    activate SAS
+    SAS->>DB: Busca SectionAllocation (Pessimistic Lock - WRITE)
+    DB-->>SAS: Retorna SectionAllocation
+    SAS->>SAS: Procura assentos livres na matriz
+    alt Assentos disponíveis encontrados
+      SAS->>SAS: Reserva assentos marcando timestamp de expiração (currentTime + 60s)
+      SAS-->>REST: Retorna AllocatedSeats
+    else Assentos insuficientes
+      SAS-->>REST: Retorna lista vazia (falha)
     end
-    deactivate REST
+    deactivate SAS
+  end
+
+  alt Sucesso em todas as Seções
+    loop Para cada Seção
+      REST->>SAS: markOccupied(seats)
+      Note over REST,SAS: Grava -1 (ocupado permanente) na matriz
+    end
+    REST->>DB: Persiste Booking e Tickets (Cascade)
+    REST->>CDI: fire(booking)
+    REST-->>Visitante: Retorna HTTP 200 (Booking JSON)
+  else Falha de alocação em qualquer Seção
+    Note over REST: Desfaz as alterações (Rollback)
+    REST-->>Visitante: Retorna HTTP 400 Bad Request
+  end
+  deactivate REST
 ```
 
 ### 16.2 Fluxo de Cancelamento de Reserva
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Visitante as Visitante (Browser)
-    participant REST as BookingService (REST)
-    participant SAS as SeatAllocationService (EJB)
-    participant DB as Banco de Dados
-    participant CDI as Event<Booking> (CDI)
+  autonumber
+  actor Visitante as Visitante (Browser)
+  participant REST as BookingService (REST)
+  participant SAS as SeatAllocationService (EJB)
+  participant DB as Banco de Dados
+  participant CDI as Event<Booking> (CDI)
 
-    Visitante->>REST: DELETE /rest/bookings/{id}
-    activate REST
-    REST->>DB: Busca Booking por ID
-    alt Booking Inexistente
-        DB-->>REST: Retorna null
-        REST-->>Visitante: Retorna HTTP 404 Not Found
-    else Booking Encontrado
-        DB-->>REST: Retorna Booking
-        REST->>DB: Remove Booking (Cascade remove Tickets)
-        
-        loop Para cada Seção da Reserva
-            REST->>SAS: deallocateSeats(Section, Performance, seats)
-            activate SAS
-            SAS->>DB: Busca SectionAllocation (Pessimistic Lock - WRITE)
-            DB-->>SAS: Retorna SectionAllocation
-            SAS->>SAS: Define assentos na matriz como 0
-            SAS->>DB: Atualiza SectionAllocation
-            deactivate SAS
-        end
-        
-        REST->>CDI: fire(booking)
-        REST-->>Visitante: Retorna HTTP 204 No Content
+  Visitante->>REST: DELETE /rest/bookings/{id}
+  activate REST
+  REST->>DB: Busca Booking por ID
+  alt Booking Inexistente
+    DB-->>REST: Retorna null
+    REST-->>Visitante: Retorna HTTP 404 Not Found
+  else Booking Encontrado
+    DB-->>REST: Retorna Booking
+    REST->>DB: Remove Booking (Cascade remove Tickets)
+
+    loop Para cada Seção da Reserva
+      REST->>SAS: deallocateSeats(Section, Performance, seats)
+      activate SAS
+      SAS->>DB: Busca SectionAllocation (Pessimistic Lock - WRITE)
+      DB-->>SAS: Retorna SectionAllocation
+      SAS->>SAS: Define assentos na matriz como 0
+      SAS->>DB: Atualiza SectionAllocation
+      deactivate SAS
     end
-    deactivate REST
+
+    REST->>CDI: fire(booking)
+    REST-->>Visitante: Retorna HTTP 204 No Content
+  end
+  deactivate REST
 ```
 
 ### 16.3 Fluxo de Execução do Simulador de Cargas (Bot)
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Admin as Administrador
-    participant BSS as BotStatusService
-    participant BS as BotService (Singleton EJB)
-    participant Bot as Bot (Stateless EJB)
-    participant RS as BookingService
-    participant CDI as Event<String> (CDI)
+  autonumber
+  actor Admin as Administrador
+  participant BSS as BotStatusService
+  participant BS as BotService (Singleton EJB)
+  participant Bot as Bot (Stateless EJB)
+  participant RS as BookingService
+  participant CDI as Event<String> (CDI)
 
-    Admin->>BSS: PUT /rest/bot/status (updatedState = RUNNING)
-    activate BSS
-    BSS->>BS: start()
-    activate BS
-    BS->>Bot: start()
+  Admin->>BSS: PUT /rest/bot/status (updatedState = RUNNING)
+  activate BSS
+  BSS->>BS: start()
+  activate BS
+  BS->>Bot: start()
+  activate Bot
+  Bot->>CDI: fire("Bot started...")
+  Note over Bot: Agenda EJB TimerService (3s)
+  Bot-->>BS: Retorna Timer
+  deactivate Bot
+  BS-->>BSS: Retorna
+  deactivate BS
+  BSS-->>Admin: Retorna HTTP 204 No Content
+  deactivate BSS
+
+  Note over Bot: Dispara a cada 3 segundos
+  loop Timer Loop
     activate Bot
-    Bot->>CDI: fire("Bot started...")
-    Note over Bot: Agenda EJB TimerService (3s)
-    Bot-->>BS: Retorna Timer
+    Bot->>Bot: book(Timer)
+    Bot->>RS: Leitura de Shows & Performances
+    Bot->>Bot: Sorteia Comprador, Show e Performance
+    Bot->>Bot: Sorteia quantidades de ingressos
+    Bot->>RS: createBooking(BookingRequest)
+    activate RS
+    RS-->>Bot: Retorna HTTP 200/400
+    deactivate RS
+    Bot->>CDI: fire(Log da Compra)
     deactivate Bot
-    BS-->>BSS: Retorna
-    deactivate BS
-    BSS-->>Admin: Retorna HTTP 204 No Content
-    deactivate BSS
-
-    Note over Bot: Dispara a cada 3 segundos
-    loop Timer Loop
-        activate Bot
-        Bot->>Bot: book(Timer)
-        Bot->>RS: Leitura de Shows & Performances
-        Bot->>Bot: Sorteia Comprador, Show e Performance
-        Bot->>Bot: Sorteia quantidades de ingressos
-        Bot->>RS: createBooking(BookingRequest)
-        activate RS
-        RS-->>Bot: Retorna HTTP 200/400
-        deactivate RS
-        Bot->>CDI: fire(Log da Compra)
-        deactivate Bot
-    end
+  end
 ```
 
 ### 16.4 Fluxo de Consulta de Eventos e Shows (Catálogo Público)
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Visitante as Visitante (Browser)
-    participant ES as EventService (REST)
-    participant SS as ShowService (REST)
-    participant DB as Banco de Dados
+  autonumber
+  actor Visitante as Visitante (Browser)
+  participant ES as EventService (REST)
+  participant SS as ShowService (REST)
+  participant DB as Banco de Dados
 
-    Visitante->>ES: GET /rest/events?category={id}
-    activate ES
-    ES->>DB: Executa CriteriaQuery com filtro de categoria
-    DB-->>ES: Retorna lista de Eventos
-    ES-->>Visitante: Retorna HTTP 200 (Eventos JSON)
-    deactivate ES
+  Visitante->>ES: GET /rest/events?category={id}
+  activate ES
+  ES->>DB: Executa CriteriaQuery com filtro de categoria
+  DB-->>ES: Retorna lista de Eventos
+  ES-->>Visitante: Retorna HTTP 200 (Eventos JSON)
+  deactivate ES
 
-    Visitante->>SS: GET /rest/shows?event={id}
-    activate SS
-    SS->>DB: Executa CriteriaQuery com filtro de evento
-    DB-->>SS: Retorna lista de Shows (com Venues)
-    SS-->>Visitante: Retorna HTTP 200 (Shows JSON)
-    deactivate SS
+  Visitante->>SS: GET /rest/shows?event={id}
+  activate SS
+  SS->>DB: Executa CriteriaQuery com filtro de evento
+  DB-->>SS: Retorna lista de Shows (com Venues)
+  SS-->>Visitante: Retorna HTTP 200 (Shows JSON)
+  deactivate SS
 ```
 
 ### 16.5 Fluxo de Operações de CRUD do Painel Administrativo
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Admin as Administrador
-    participant CRUD as EventEndpoint (Forge REST)
-    participant DTO as EventDTO
-    participant DB as Banco de Dados
+  autonumber
+  actor Admin as Administrador
+  participant CRUD as EventEndpoint (Forge REST)
+  participant DTO as EventDTO
+  participant DB as Banco de Dados
 
-    Admin->>CRUD: POST /rest/forge/events (EventDTO JSON)
-    activate CRUD
-    CRUD->>DTO: fromDTO(null, EntityManager)
-    activate DTO
-    Note over DTO: Cria entidade JPA Event<br/>e valida constraints Bean Validation
-    DTO-->>CRUD: Retorna entidade física Event
-    deactivate DTO
-    CRUD->>DB: Persiste entidade Event
-    CRUD-->>Admin: Retorna HTTP 201 Created (URI no Header Location)
-    deactivate CRUD
+  Admin->>CRUD: POST /rest/forge/events (EventDTO JSON)
+  activate CRUD
+  CRUD->>DTO: fromDTO(null, EntityManager)
+  activate DTO
+  Note over DTO: Cria entidade JPA Event<br/>e valida constraints Bean Validation
+  DTO-->>CRUD: Retorna entidade física Event
+  deactivate DTO
+  CRUD->>DB: Persiste entidade Event
+  CRUD-->>Admin: Retorna HTTP 201 Created (URI no Header Location)
+  deactivate CRUD
 ```
 
 ### 16.6 Fluxo de Reset do Simulador (Bot Reset e Remoção em Massa)
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor Admin as Administrador
-    participant BSS as BotStatusService
-    participant BS as BotService (Singleton EJB)
-    participant RS as BookingService
-    participant DB as Banco de Dados
-    participant CDI as Event<String> (CDI)
+  autonumber
+  actor Admin as Administrador
+  participant BSS as BotStatusService
+  participant BS as BotService (Singleton EJB)
+  participant RS as BookingService
+  participant DB as Banco de Dados
+  participant CDI as Event<String> (CDI)
 
-    Admin->>BSS: PUT /rest/bot/status (updatedState = RESET)
-    activate BSS
-    BSS->>BS: deleteAll()
-    activate BS
-    BS->>BS: stop() (Timer cancelado)
-    
-    loop Enquanto houver reservas no sistema
-        BS->>RS: getAll(maxResults = 10)
-        activate RS
-        RS->>DB: Consulta as primeiras 10 reservas
-        DB-->>RS: Retorna lista de Booking
-        deactivate RS
-        
-        loop Para cada Booking na lista
-            BS->>RS: deleteBooking(Booking.id)
-            activate RS
-            Note over RS: Executa remoção dos tickets e liberação de assentos
-            RS->>DB: Remove Booking da base
-            RS-->>BS: Retorna
-            deactivate RS
-            BS->>CDI: fire("Deleted booking id...")
-        end
+  Admin->>BSS: PUT /rest/bot/status (updatedState = RESET)
+  activate BSS
+  BSS->>BS: deleteAll()
+  activate BS
+  BS->>BS: stop() (Timer cancelado)
+
+  loop Enquanto houver reservas no sistema
+    BS->>RS: getAll(maxResults = 10)
+    activate RS
+    RS->>DB: Consulta as primeiras 10 reservas
+    DB-->>RS: Retorna lista de Booking
+    deactivate RS
+
+    loop Para cada Booking na lista
+      BS->>RS: deleteBooking(Booking.id)
+      activate RS
+      Note over RS: Executa remoção dos tickets e liberação de assentos
+      RS->>DB: Remove Booking da base
+      RS-->>BS: Retorna
+      deactivate RS
+      BS->>CDI: fire("Deleted booking id...")
     end
-    
-    BS-->>BSS: Retorna
-    deactivate BS
-    BSS-->>Admin: Retorna HTTP 204 No Content
-    deactivate BSS
+  end
+
+  BS-->>BSS: Retorna
+  deactivate BS
+  BSS-->>Admin: Retorna HTTP 204 No Content
+  deactivate BSS
 ```

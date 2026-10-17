@@ -112,13 +112,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Trilha de auditoria de eventos de reserva (RN-NOVA-05)
 -- ============================================================
 CREATE TABLE telemetry.booking_event_audit (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_type    VARCHAR(100) NOT NULL,  -- BookingInitiatedEvent | SeatsAllocatedEvent | BookingConfirmedEvent | BookingFailedEvent | BookingCancelledEvent
-    aggregate_id  UUID NOT NULL,           -- booking_id de origem
-    payload       JSONB NOT NULL,
-    occurred_at   TIMESTAMPTZ NOT NULL,    -- timestamp gerado pelo produtor do evento
-    received_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-    trace_id      VARCHAR(64)              -- correlação com OpenTelemetry
+                                               id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                               event_type    VARCHAR(100) NOT NULL,  -- BookingInitiatedEvent | SeatsAllocatedEvent | BookingConfirmedEvent | BookingFailedEvent | BookingCancelledEvent
+                                               aggregate_id  UUID NOT NULL,           -- booking_id de origem
+                                               payload       JSONB NOT NULL,
+                                               occurred_at   TIMESTAMPTZ NOT NULL,    -- timestamp gerado pelo produtor do evento
+                                               received_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                               trace_id      VARCHAR(64)              -- correlação com OpenTelemetry
 );
 
 -- Hypertable particionada por tempo (retenção de 1 ano — RN-NOVA-05)
@@ -136,22 +136,22 @@ CREATE INDEX ix_booking_event_audit_type_time ON telemetry.booking_event_audit(e
 -- Read model de ocupação (dashboard em tempo real)
 -- ============================================================
 CREATE TABLE telemetry.sales_metric_snapshot (
-    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    show_id           UUID NOT NULL,
-    performance_id    UUID NOT NULL,
-    performance_date  TIMESTAMPTZ NOT NULL,
-    section_id        UUID NOT NULL,
-    seats_total       INT NOT NULL,
-    seats_sold        INT NOT NULL,
-    occupancy_pct     NUMERIC(5,2) GENERATED ALWAYS AS (
-                          CASE WHEN seats_total > 0
-                               THEN round((seats_sold::numeric / seats_total) * 100, 2)
-                               ELSE 0 END
-                      ) STORED,
-    computed_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT uq_sales_metric_perf_section UNIQUE (performance_id, section_id),
-    CONSTRAINT ck_sales_metric_sold_le_total CHECK (seats_sold <= seats_total),
-    CONSTRAINT ck_sales_metric_non_negative CHECK (seats_total >= 0 AND seats_sold >= 0)
+                                                 id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                                 show_id           UUID NOT NULL,
+                                                 performance_id    UUID NOT NULL,
+                                                 performance_date  TIMESTAMPTZ NOT NULL,
+                                                 section_id        UUID NOT NULL,
+                                                 seats_total       INT NOT NULL,
+                                                 seats_sold        INT NOT NULL,
+                                                 occupancy_pct     NUMERIC(5,2) GENERATED ALWAYS AS (
+                                                     CASE WHEN seats_total > 0
+                                                              THEN round((seats_sold::numeric / seats_total) * 100, 2)
+                                                          ELSE 0 END
+                                                     ) STORED,
+                                                 computed_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+                                                 CONSTRAINT uq_sales_metric_perf_section UNIQUE (performance_id, section_id),
+                                                 CONSTRAINT ck_sales_metric_sold_le_total CHECK (seats_sold <= seats_total),
+                                                 CONSTRAINT ck_sales_metric_non_negative CHECK (seats_total >= 0 AND seats_sold >= 0)
 );
 CREATE INDEX ix_sales_metric_performance_date ON telemetry.sales_metric_snapshot(performance_date);
 
@@ -165,16 +165,16 @@ WHERE performance_date > now();
 -- Histórico resumido de execuções do Bot (RN38-RN41)
 -- ============================================================
 CREATE TABLE telemetry.bot_run_history (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    started_at      TIMESTAMPTZ NOT NULL,
-    stopped_at      TIMESTAMPTZ NULL,
-    requests_sent   INT NOT NULL DEFAULT 0,
-    tickets_sent    INT NOT NULL DEFAULT 0,
-    triggered_by    VARCHAR(255),           -- claim azp/client_id de quem iniciou (US-TEL-02)
-    status          VARCHAR(20) NOT NULL DEFAULT 'RUNNING',
-    CONSTRAINT ck_bot_run_status CHECK (status IN ('RUNNING','STOPPED')),
-    CONSTRAINT ck_bot_run_requests_limit CHECK (requests_sent <= 100),  -- RN38
-    CONSTRAINT ck_bot_run_tickets_limit CHECK (tickets_sent <= 100)     -- RN38 (por request; validado também no use case)
+                                           id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                           started_at      TIMESTAMPTZ NOT NULL,
+                                           stopped_at      TIMESTAMPTZ NULL,
+                                           requests_sent   INT NOT NULL DEFAULT 0,
+                                           tickets_sent    INT NOT NULL DEFAULT 0,
+                                           triggered_by    VARCHAR(255),           -- claim azp/client_id de quem iniciou (US-TEL-02)
+                                           status          VARCHAR(20) NOT NULL DEFAULT 'RUNNING',
+                                           CONSTRAINT ck_bot_run_status CHECK (status IN ('RUNNING','STOPPED')),
+                                           CONSTRAINT ck_bot_run_requests_limit CHECK (requests_sent <= 100),  -- RN38
+                                           CONSTRAINT ck_bot_run_tickets_limit CHECK (tickets_sent <= 100)     -- RN38 (por request; validado também no use case)
 );
 CREATE INDEX ix_bot_run_status ON telemetry.bot_run_history(status) WHERE status = 'RUNNING';
 ```
@@ -215,3 +215,4 @@ CREATE INDEX ix_bot_run_status ON telemetry.bot_run_history(status) WHERE status
 * **Escala de escrita:** por concentrar todo o tráfego de eventos de negócio do sistema (incluindo os gerados pelo Bot em alta frequência), `booking_event_audit` é a tabela com maior risco de gargalo de I/O — a hypertable com partições pequenas (ex.: diárias) mantém os índices de cada partição compactos e a escrita eficiente mesmo em picos de carga simulada.
 
 
+ z  
