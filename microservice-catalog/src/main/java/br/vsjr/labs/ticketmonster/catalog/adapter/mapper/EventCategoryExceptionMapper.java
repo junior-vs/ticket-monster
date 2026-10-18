@@ -1,6 +1,7 @@
-package br.vsjr.labs.ticketmonster.catalog.adapter.rest.mapper;
+package br.vsjr.labs.ticketmonster.catalog.adapter.mapper;
 
-import br.vsjr.labs.ticketmonster.catalog.adapter.out.dto.ProblemDetails;
+
+import br.vsjr.labs.ticketmonster.catalog.adapter.dto.out.ProblemDetails;
 import br.vsjr.labs.ticketmonster.catalog.domain.exception.EventCategoryAlreadyExistsException;
 import br.vsjr.labs.ticketmonster.catalog.domain.exception.EventCategoryInUseException;
 import br.vsjr.labs.ticketmonster.catalog.domain.exception.EventCategoryNotFoundException;

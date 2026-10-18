@@ -3,7 +3,7 @@
 **Feature Branch**: `009-gerenciar-categorias-eventos`  
 **Created**: 2026-07-25  
 **Status**: Draft  
-**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: specs/microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -27,7 +27,7 @@ Como um Administrador do sistema, quero cadastrar uma nova categoria de evento (
 **Feature Branch**: `009-gerenciar-categorias-eventos`
 **Created**: 2026-07-25
 **Status**: Draft
-**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: specs/microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
 
 **Origem**: `microservice-catalog_spec.md` — US-CAT-09, RN06, item `[NOVO]` (proteção contra exclusão com Event associado).
 

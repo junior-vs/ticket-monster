@@ -1,4 +1,4 @@
-package br.vsjr.labs.ticketmonster.catalog.adapter.in.dto;
+package br.vsjr.labs.ticketmonster.catalog.adapter.dto.in;
 
 import java.time.Instant;
 import java.util.UUID;

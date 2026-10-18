@@ -1,6 +1,6 @@
 package br.vsjr.labs.ticketmonster.catalog.domain.model;
 
-import br.vsjr.labs.ticketmonster.catalog.adapter.in.dto.EventCategoryVO;
+import br.vsjr.labs.ticketmonster.catalog.adapter.dto.in.EventCategoryVO;
 import br.vsjr.labs.ticketmonster.catalog.domain.entity.EventCategoryEntity;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
