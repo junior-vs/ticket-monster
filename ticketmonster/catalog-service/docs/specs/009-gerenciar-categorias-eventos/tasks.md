@@ -16,8 +16,8 @@
 
 **Purpose**: Initialize project structure and baseline configuration for `catalog-service`
 
-- [ ] T001 Configure application properties for Quarkus OIDC, PostgreSQL, and Redis in `catalog-service/src/main/resources/application.properties`
-- [ ] T002 [P] Create package layout for Clean Architecture in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/`
+- [x] T001 Configure application properties for Quarkus OIDC, PostgreSQL, and Redis in `microservice-catalog/src/main/resources/application.properties`
+- [x] T002 [P] Create package layout for Clean Architecture in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/`
 
 ---
 
