@@ -8,7 +8,7 @@
 
 **Input**: User description: "US-CAT-02: Filtrar eventos catalogados por categoria de interesse. respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog` — US-CAT-02, RN01, RN04, alinhado com `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I, II, IV, V).
+**Origem**: `catalog-service` — US-CAT-02, RN01, RN04, alinhado com `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I, II, IV, V).
 
 ---
 
@@ -85,7 +85,7 @@ Como visitante navegando em uma categoria com grande volume de eventos, quero na
 
 ### Functional Requirements
 
-- **FR-001**: O sistema MUST disponibilizar endpoint público no `microservice-catalog` para consultar eventos filtrados por categoria (`categoryId`).
+- **FR-001**: O sistema MUST disponibilizar endpoint público no `catalog-service` para consultar eventos filtrados por categoria (`categoryId`).
 - **FR-002**: O sistema MUST retornar na consulta filtrada por categoria apenas eventos com `status = PUBLISHED`.
 - **FR-003**: O sistema MUST filtrar rigorosamente a lista excluindo eventos em rascunho (`DRAFT`) ou arquivados (`ARCHIVED`).
 - **FR-004**: O sistema MUST validar a existência da categoria informada no cadastro de `EventCategory` antes de processar a busca.
@@ -118,7 +118,7 @@ Como visitante navegando em uma categoria com grande volume de eventos, quero na
 - **SC-001**: 100% dos eventos retornados no filtro por categoria possuem `status = PUBLISHED` e estão vinculados à categoria solicitada.
 - **SC-002**: Visitantes conseguem filtrar e visualizar eventos de uma categoria com tempo de resposta imperceptível (interação completa em até 2 passos no frontend).
 - **SC-003**: 100% das chamadas com categorias inexistentes ou parâmetros malformados resultam em respostas RFC 7807 400 Bad Request válidas.
-- **SC-004**: Zero regressões nos contratos REST do `microservice-catalog` validados por testes de contrato automatizados.
+- **SC-004**: Zero regressões nos contratos REST do `catalog-service` validados por testes de contrato automatizados.
 
 ---
 
@@ -133,7 +133,7 @@ Como visitante navegando em uma categoria com grande volume de eventos, quero na
 
 ## Assumptions
 
-- O `microservice-catalog` gerencia a tabela de categorias (`event_category`) e eventos (`event`) em seu banco de dados isolado `catalog_db`.
+- O `catalog-service` gerencia a tabela de categorias (`event_category`) e eventos (`event`) em seu banco de dados isolado `catalog_db`.
 - A estratégia de cache distribuído em Redis utiliza chaves do tipo `catalog:category:{id}:events` com expiração (TTL) de 1 hora, invalidada via eventos de atualização de catálogo (`arquitetura-solucao.md`, seção 10).
 - O parâmetro query `categoryId` será a convenção padrão para passar o identificador da categoria no endpoint de listagem de eventos (`GET /api/v1/events?categoryId={id}`).
 - Erros de validação seguem rigorosamente a convenção RFC 7807 Problem Details estabelecida na seção 8 de `arquitetura-solucao.md` e na Constituição.
@@ -144,7 +144,7 @@ Como visitante navegando em uma categoria com grande volume de eventos, quero na
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001, FR-002, FR-003 | `microservice-catalog` US-CAT-02 | Filtro por categoria para eventos publicados |
+| FR-001, FR-002, FR-003 | `catalog-service` US-CAT-02 | Filtro por categoria para eventos publicados |
 | FR-004, FR-005, FR-006 | `arquitetura-solucao.md` seção 8 (RFC 7807) | Validação e erro de categoria |
 | FR-007, FR-008 | `arquitetura-solucao.md` seção 25.3 (RN42) | Paginação `page`/`size` base 0 e ordenação |
 | FR-009 | `arquitetura-solucao.md` seção 15.4 | Acesso público ao catálogo GET `/events` |

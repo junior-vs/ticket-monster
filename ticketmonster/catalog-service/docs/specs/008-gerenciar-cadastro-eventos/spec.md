@@ -3,7 +3,7 @@
 **Feature Branch**: `008-gerenciar-cadastro-eventos`  
 **Created**: 2026-07-25  
 **Status**: Draft  
-**Input**: User description: "* **US-CAT-08:** Gerenciar cadastro de eventos (Inclusão, Alteração, Exclusão) (Admin). respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-08:** Gerenciar cadastro de eventos (Inclusão, Alteração, Exclusão) (Admin). respect: docs\\spec\\catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -136,6 +136,6 @@ Como um Administrador do sistema, quero excluir um evento que foi cadastrado ind
 ## Assumptions
 
 - O gerenciamento de categorias de eventos (US-CAT-09) e mídias (US-CAT-12) possui APIs próprias, sendo utilizadas aqui por referência via UUIDs existentes.
-- O microsserviço responsável pela implementação é o `microservice-catalog` utilizando o banco de dados PostgreSQL (`catalog_db`) e cache Redis.
+- O microsserviço responsável pela implementação é o `catalog-service` utilizando o banco de dados PostgreSQL (`catalog_db`) e cache Redis.
 - A autenticação de administradores é provida via token OAuth2/JWT emitido pelo Keycloak, contendo a role `ROLE_ADMIN` no claim `realm_access.roles`.
 - As regras de negócio RN01, RN02, RN03, RN04 e RN05 são aplicadas rigorosamente pela camada de domínio da aplicação Quarkus.

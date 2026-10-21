@@ -2,11 +2,11 @@
 
 **Branch**: `009-gerenciar-categorias-eventos` | **Date**: 2026-07-26 | **Spec**: [specs/009-gerenciar-categorias-eventos/spec.md](file:///e:/develop/repos/java-projects/ticket-monster/specs/009-gerenciar-categorias-eventos/spec.md)
 
-**Input**: Feature specification from `specs/009-gerenciar-categorias-eventos/spec.md`, `specs/microservice-catalog.spec.md`, and `docs/arch/arquitetura-solucao.md`.
+**Input**: Feature specification from `specs/009-gerenciar-categorias-eventos/spec.md`, `specs/catalog-service.spec.md`, and `docs/arch/arquitetura-solucao.md`.
 
 ## Summary
 
-Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `microservice-catalog` (Fase 0 da arquitetura de catálogo). A solução expõe endpoints REST para criação (POST), alteração (PUT), exclusão (DELETE) administrativa e listagem (GET) pública. Operações de escrita são protegidas via Keycloak JWT RBAC (`ROLE_ADMIN`), enquanto consultas utilizam estratégia Cache-Aside via Redis sob a chave `catalog:categories:list` (FR-007) para garantir latência P95 <= 50ms. O sistema assegura unicidade e normalização de descrição com `btrim()` no use case e constraint `CHECK (description = btrim(description))` no banco (RN06, FR-002a), impede a exclusão de categorias vinculadas a eventos (`ON DELETE RESTRICT` / RN04) e formata todas as exceções seguindo o padrão RFC 7807 (Problem Details).
+Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `catalog-service` (Fase 0 da arquitetura de catálogo). A solução expõe endpoints REST para criação (POST), alteração (PUT), exclusão (DELETE) administrativa e listagem (GET) pública. Operações de escrita são protegidas via Keycloak JWT RBAC (`ROLE_ADMIN`), enquanto consultas utilizam estratégia Cache-Aside via Redis sob a chave `catalog:categories:list` (FR-007) para garantir latência P95 <= 50ms. O sistema assegura unicidade e normalização de descrição com `btrim()` no use case e constraint `CHECK (description = btrim(description))` no banco (RN06, FR-002a), impede a exclusão de categorias vinculadas a eventos (`ON DELETE RESTRICT` / RN04) e formata todas as exceções seguindo o padrão RFC 7807 (Problem Details).
 
 ## Technical Context
 
@@ -36,7 +36,7 @@ Implementar o CRUD completo da entidade raiz `EventCategory` no microsserviço `
 - Zero categorias duplicadas ou vazias no banco de dados, incluindo normalização por trim (RN06, FR-002a, SC-002)
 - Taxa de erro não tratado (5xx) em steady-state < 0,1% (PR-001)
 
-**Scale/Scope**: Entidade raiz do microsserviço `microservice-catalog`, sem dependências de FK de saída (RN06 / US-CAT-09).
+**Scale/Scope**: Entidade raiz do microsserviço `catalog-service`, sem dependências de FK de saída (RN06 / US-CAT-09).
 
 ## Constitution Check
 
@@ -64,10 +64,10 @@ specs/009-gerenciar-categorias-eventos/
     └── event-categories-api.yaml
 ```
 
-### Source Code (`microservice-catalog`)
+### Source Code (`catalog-service`)
 
 ```text
-microservice-catalog/src/
+catalog-service/src/
 ├── main/
 │   ├── java/br/vsjr/labs/ticketmonster/catalog/
 │   │   ├── domain/
@@ -102,7 +102,7 @@ microservice-catalog/src/
         └── rest/EventCategoryResourceTest.java
 ```
 
-**Structure Decision**: Selecionada estrutura de microsserviço Java com Quarkus 3.37+ no módulo `microservice-catalog`, seguindo Clean Architecture em pacotes por camada (`domain`, `application`, `adapter`).
+**Structure Decision**: Selecionada estrutura de microsserviço Java com Quarkus 3.37+ no módulo `catalog-service`, seguindo Clean Architecture em pacotes por camada (`domain`, `application`, `adapter`).
 
 ## Complexity Tracking
 

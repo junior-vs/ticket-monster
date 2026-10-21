@@ -4,9 +4,9 @@
 **Created**: 2026-07-25
 **Revised**: 2026-08-06 — revisão de grounding contra o código real (`main@a9c38aa`) e foco em especificação de negócio
 **Status**: Draft
-**Input**: User description: "US-CAT-10: Gerenciar locais físicos de espetáculos e suas seções estruturais (Admin). respect: docs/spec/microservice-catalog.spec.md, docs/arch/arquitetura-solucao.md"
+**Input**: User description: "US-CAT-10: Gerenciar locais físicos de espetáculos e suas seções estruturais (Admin). respect: docs/spec/catalog-service.spec.md, docs/arch/arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog.spec.md` — US-CAT-10, RN07, RN11, RN12.
+**Origem**: `catalog-service.spec.md` — US-CAT-10, RN07, RN11, RN12.
 
 ## Estado Atual Verificado no Código (informativo, não normativo)
 
@@ -21,8 +21,8 @@ Esta seção existe para evitar que a próxima geração de `plan`/`tasks` repit
 
 1. **Capacidade é coluna gerada pelo banco (`GENERATED ALWAYS ... STORED`), não recalculada pela aplicação**: confirmado no schema aplicado. O payload de escrita MUST NOT aceitar `capacity` como campo de entrada (ver FR-005a).
 2. **Exclusão individual de `Section` adicionada**: a spec original só cobria exclusão de seção como efeito cascata da exclusão do Venue. Adicionada US5 para exclusão isolada de uma seção.
-3. **Risco arquitetural não resolvido — ausência de evento de propagação para `microservice-inventory`**: `microservice-inventory.spec.md` declara que `section_snapshot` é sincronizado via consumo de eventos `SectionCreated/Updated` publicados pelo `microservice-catalog`. Nenhum documento define `SectionDeleted` ou `VenueDeleted` (ou uma versão de `SectionUpdated` disparada em alteração de capacidade). Sem esse evento, o inventário pode manter snapshot de uma seção excluída ou com capacidade divergente do catálogo. Esta spec declara esse gap como risco explícito (ver "Riscos") e condiciona a entrega completa da feature à existência do evento — não resolve a lacuna arquitetural por conta própria.
-4. **Contradição com "Dependências: Nenhuma" do serviço**: o edge case de validar redução de capacidade contra ingressos já vendidos implicaria consulta a dados que pertencem a `microservice-inventory`. `microservice-catalog.spec.md` declara explicitamente que o catalog não tem dependências. Esta spec remove a validação síncrona do escopo e documenta a alternativa assíncrona como decisão pendente (ver "Riscos").
+3. **Risco arquitetural não resolvido — ausência de evento de propagação para `microservice-inventory`**: `microservice-inventory.spec.md` declara que `section_snapshot` é sincronizado via consumo de eventos `SectionCreated/Updated` publicados pelo `catalog-service`. Nenhum documento define `SectionDeleted` ou `VenueDeleted` (ou uma versão de `SectionUpdated` disparada em alteração de capacidade). Sem esse evento, o inventário pode manter snapshot de uma seção excluída ou com capacidade divergente do catálogo. Esta spec declara esse gap como risco explícito (ver "Riscos") e condiciona a entrega completa da feature à existência do evento — não resolve a lacuna arquitetural por conta própria.
+4. **Contradição com "Dependências: Nenhuma" do serviço**: o edge case de validar redução de capacidade contra ingressos já vendidos implicaria consulta a dados que pertencem a `microservice-inventory`. `catalog-service.spec.md` declara explicitamente que o catalog não tem dependências. Esta spec remove a validação síncrona do escopo e documenta a alternativa assíncrona como decisão pendente (ver "Riscos").
 5. Cenário de conflito de renomeação de Venue adicionado à US3.
 6. Validação de endereço reduzida ao que a DDL de fato garante (campos nullable, sem formato de CEP definido em RN) — tratada como Assumption, não como requisito.
 7. Contrato de chave de cache Redis (FR-010) explicitado, reaproveitando o namespace `catalog.cache.key-prefix` já configurado em `application.properties` (não introduz um segundo esquema de nomenclatura de cache).
@@ -105,7 +105,7 @@ Como um Administrador do sistema, quero excluir uma seção física isolada (sem
 
 **Acceptance Scenarios**:
 
-1. **Given** uma seção sem visibilidade de vendas conhecida pelo `microservice-catalog` (este serviço não possui essa visibilidade — ver "Riscos"), **When** o Administrador solicita a exclusão via HTTP DELETE, **Then** o sistema deve remover a seção e retornar HTTP 204 (No Content).
+1. **Given** uma seção sem visibilidade de vendas conhecida pelo `catalog-service` (este serviço não possui essa visibilidade — ver "Riscos"), **When** o Administrador solicita a exclusão via HTTP DELETE, **Then** o sistema deve remover a seção e retornar HTTP 204 (No Content).
 2. **Given** a exclusão de uma seção, **Then** o sistema deve publicar o evento de propagação correspondente (ver FR-011 / "Riscos") para que `microservice-inventory` possa reconciliar seu `section_snapshot` — pré-condição não implementada nesta feature, tratada como dependência externa.
 
 ---
@@ -113,14 +113,14 @@ Como um Administrador do sistema, quero excluir uma seção física isolada (sem
 ### Edge Cases
 
 - **Tentativa de criação de seção vinculada a Venue inexistente**: o sistema deve retornar HTTP 404 (Not Found).
-- **Alteração de capacidade de seções com ingressos já vendidos**: esta feature NÃO realiza validação síncrona contra o estado de vendas do `microservice-inventory`, por este ser declarado como serviço sem dependências (`microservice-catalog.spec.md`, "Dependências: Nenhuma"). A alteração de `number_of_rows`/`row_capacity` é aceita no `catalog_db` independentemente do estado de vendas; a reconciliação com `inventory` depende de evento de propagação ainda não especificado (ver "Riscos").
+- **Alteração de capacidade de seções com ingressos já vendidos**: esta feature NÃO realiza validação síncrona contra o estado de vendas do `microservice-inventory`, por este ser declarado como serviço sem dependências (`catalog-service.spec.md`, "Dependências: Nenhuma"). A alteração de `number_of_rows`/`row_capacity` é aceita no `catalog_db` independentemente do estado de vendas; a reconciliação com `inventory` depende de evento de propagação ainda não especificado (ver "Riscos").
 - **Validação de campos de endereço**: `address_line`, `city`, `state`, `postal_code`, `country` são nullable na DDL de origem e não possuem RN de formato definida. Esta spec não impõe validação de formato de CEP/endereço além de tipo de dado — ver Assumptions.
 - **Requisições de escrita sem credencial `ROLE_ADMIN`**: devem retornar HTTP 401 (Unauthorized) ou 403 (Forbidden).
 
 ### User Experience Consistency *(mandatory)*
 
 - **Canais**: as APIs de inclusão, edição e exclusão de Venues e Seções são administrativas e exigem `ROLE_ADMIN`. As APIs de consulta pública de Venues e detalhes de seções são abertas para exibição no canal de vendas (US-CAT-04, US-CAT-05).
-- **Padronização de Erros**: qualquer falha de validação ou restrição relacional é exposta via RFC 7807 (Problem Details), no mesmo formato já usado por `microservice-catalog.spec.md` seção 8 e pela feature de categorias de evento.
+- **Padronização de Erros**: qualquer falha de validação ou restrição relacional é exposta via RFC 7807 (Problem Details), no mesmo formato já usado por `catalog-service.spec.md` seção 8 e pela feature de categorias de evento.
 - **Capacidade Calculada**: a capacidade total da seção NUNCA é aceita como entrada de escrita; é um valor estritamente derivado pelo banco de dados (coluna gerada) a partir de `fileiras × capacidade por fileira` (RN12).
 - **Identificadores**: Venues e Seções usam UUID v4.
 
@@ -173,11 +173,11 @@ Como um Administrador do sistema, quero excluir uma seção física isolada (sem
 ## Riscos
 
 - **Ausência de evento de propagação `SectionDeleted`/`SectionUpdated`/`VenueDeleted`**: `microservice-inventory.spec.md` documenta apenas o consumo de `SectionCreated/Updated` e `PerformanceScheduled` para popular `section_snapshot`/`performance_snapshot`. Não há especificação de evento para exclusão de seção/Venue nem para redução de capacidade. Sem isso, `inventory` pode reter snapshot de uma seção inexistente ou com capacidade desatualizada no `catalog_db`, criando risco de venda de assentos que não existem mais fisicamente. **Recomendação**: abrir ADR complementar antes da implementação de FR-011 em produção; até lá, a exclusão de seção/Venue nesta feature afeta apenas `catalog_db`.
-- **Validação de capacidade contra vendas existentes não é responsabilidade deste serviço**: dado que `microservice-catalog` declara "Dependências: Nenhuma", esta feature não implementa nenhuma checagem síncrona ou assíncrona contra `seat_ledger`/`ticket_price` do `microservice-inventory` antes de permitir redução de `row_capacity`/`number_of_rows`. Se essa validação for exigida pelo negócio, é uma capacidade nova a ser modelada como consumo de evento pelo `inventory`, não como chamada síncrona do `catalog`.
+- **Validação de capacidade contra vendas existentes não é responsabilidade deste serviço**: dado que `catalog-service` declara "Dependências: Nenhuma", esta feature não implementa nenhuma checagem síncrona ou assíncrona contra `seat_ledger`/`ticket_price` do `microservice-inventory` antes de permitir redução de `row_capacity`/`number_of_rows`. Se essa validação for exigida pelo negócio, é uma capacidade nova a ser modelada como consumo de evento pelo `inventory`, não como chamada síncrona do `catalog`.
 
 ## Assumptions
 
-- O gerenciamento de Venues e Seções é realizado no microsserviço `microservice-catalog` operando sobre o schema `catalog.venue` e `catalog.section` no PostgreSQL, já aplicado.
+- O gerenciamento de Venues e Seções é realizado no microsserviço `catalog-service` operando sobre o schema `catalog.venue` e `catalog.section` no PostgreSQL, já aplicado.
 - O cache das estruturas físicas de locais é mantido em Redis para acelerar a consulta pública de detalhes de locais (US-CAT-05), reaproveitando o namespace de cache já configurado no serviço.
 - Campos de endereço são validados apenas quanto a tipo/tamanho de dado; não há exigência de formato de CEP por RN ou constraint de banco nesta versão.
 - Metas de latência (P95 <= 200 ms escrita, invalidação de cache <= 50 ms) são propostas desta spec, não confirmadas em `arquitetura-solucao.md` — sujeitas a validação em teste de carga antes de virarem SLO.
@@ -193,6 +193,6 @@ Como um Administrador do sistema, quero excluir uma seção física isolada (sem
 | FR-006, FR-007 | DDL `show.venue_id ON DELETE RESTRICT`, `section.venue_id ON DELETE CASCADE` (aplicada) | — |
 | FR-008 | `arquitetura-solucao.md` seção 8; convenção já em produção na feature de categorias | RFC 7807 |
 | FR-010 | Extensão do namespace de cache já configurado (`catalog.cache.key-prefix`) | Chave específica de Venue/Section, não definida em `arquitetura-solucao.md` seção 10 |
-| FR-011 / US5 | Gap identificado — não coberto por `microservice-catalog.spec.md` | Exclusão individual de seção; depende de evento de propagação não especificado |
+| FR-011 / US5 | Gap identificado — não coberto por `catalog-service.spec.md` | Exclusão individual de seção; depende de evento de propagação não especificado |
 | Risco de propagação `inventory` | `microservice-inventory.spec.md` (Notas de Operação, sincronização de snapshots) | Gap arquitetural cross-serviço, não resolvido nesta feature |
-| Remoção de validação síncrona de vendas | `microservice-catalog.spec.md`, "Dependências: Nenhuma" | Contradição identificada e removida do escopo |
+| Remoção de validação síncrona de vendas | `catalog-service.spec.md`, "Dependências: Nenhuma" | Contradição identificada e removida do escopo |

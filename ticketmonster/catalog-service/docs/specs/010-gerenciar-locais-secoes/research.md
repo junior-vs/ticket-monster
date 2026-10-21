@@ -20,7 +20,7 @@
 
 ## Decision: CRUD REST v1 com rotas administrativas e leitura publica
 
-**Rationale**: A arquitetura define o `microservice-catalog` como API REST publica e administrativa. Rotas de escrita exigem `ROLE_ADMIN`; leituras de Venue/Section suportam o canal publico US-CAT-04/US-CAT-05.
+**Rationale**: A arquitetura define o `catalog-service` como API REST publica e administrativa. Rotas de escrita exigem `ROLE_ADMIN`; leituras de Venue/Section suportam o canal publico US-CAT-04/US-CAT-05.
 
 **Alternatives considered**: Separar APIs admin/publicas em recursos completamente distintos foi rejeitado nesta fase porque adiciona duplicacao. Usar endpoints sem versionamento foi rejeitado pela constituicao e pela disciplina contract-first.
 
@@ -32,7 +32,7 @@
 
 ## Decision: Nao validar capacidade contra vendas/inventario nesta feature
 
-**Rationale**: A arquitetura declara `microservice-catalog` sem dependencias. Consultar `microservice-inventory` para bloquear reducao de capacidade violaria esse limite. A alteracao de `numberOfRows`/`rowCapacity` deve ser aceita pelo catalogo e reconciliada por contrato/evento futuro no inventario.
+**Rationale**: A arquitetura declara `catalog-service` sem dependencias. Consultar `microservice-inventory` para bloquear reducao de capacidade violaria esse limite. A alteracao de `numberOfRows`/`rowCapacity` deve ser aceita pelo catalogo e reconciliada por contrato/evento futuro no inventario.
 
 **Alternatives considered**: Chamada sincronica ao inventario foi rejeitada por contrariar o documento de arquitetura e aumentar acoplamento. Ler snapshots do inventario diretamente foi rejeitado por violar database-per-service.
 

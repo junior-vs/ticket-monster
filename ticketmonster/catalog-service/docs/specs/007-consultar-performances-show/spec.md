@@ -6,9 +6,9 @@
 
 **Status**: Draft
 
-**Input**: User description: "from docs\spec\microservice-catalog.spec.md create spec for US-CAT-07: Consultar sessões (performances) ativas de um show para compra.. respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
+**Input**: User description: "from docs\spec\catalog-service.spec.md create spec for US-CAT-07: Consultar sessões (performances) ativas de um show para compra.. respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
 
-**Origem**: `docs/spec/microservice-catalog.spec.md` (US-CAT-07, RN09, RN10), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
+**Origem**: `docs/spec/catalog-service.spec.md` (US-CAT-07, RN09, RN10), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
 
 ---
 
@@ -131,7 +131,7 @@ Como aplicativo cliente (web/mobile), quero receber as datas das sessões serial
 
 ## Assumptions
 
-- O `microservice-catalog` gerencia a tabela `catalog.performance` no banco PostgreSQL `catalog_db`.
+- O `catalog-service` gerencia a tabela `catalog.performance` no banco PostgreSQL `catalog_db`.
 - O horário da performance é armazenado como `TIMESTAMPTZ` para suportar fusos horários de forma transparente.
 - A chave de cache no Redis utiliza o formato `catalog:shows:performance:{showId}` com TTL de 1 hora, invalidada sempre que uma sessão for adicionada ou editada.
 - O endpoint `GET /api/v1/shows/{showId}/performances` é público e livre de autenticação JWT (`arquitetura-solucao.md`, seção 15.4).
@@ -142,8 +142,8 @@ Como aplicativo cliente (web/mobile), quero receber as datas das sessões serial
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001 a FR-004 | `microservice-catalog.spec.md` US-CAT-07, RN09 | Consulta de performances/sessões de show |
+| FR-001 a FR-004 | `catalog-service.spec.md` US-CAT-07, RN09 | Consulta de performances/sessões de show |
 | FR-005, FR-006, FR-007 | `arquitetura-solucao.md` seção 8 | Respostas de erro RFC 7807 (404/400) e lista vazia |
-| FR-008 | `microservice-catalog.spec.md` RN10 | Unicidade de sessão por show (`uq_performance_show_date`) |
+| FR-008 | `catalog-service.spec.md` RN10 | Unicidade de sessão por show (`uq_performance_show_date`) |
 | FR-009, FR-010 | `arquitetura-solucao.md` seções 15.4 e 25.3 | Paginação base 0 e rota pública |
 | FR-011, FR-012 | Constituição da Modernização, Princípios III e V | Qualidade de testes e latência p95 <= 250ms |

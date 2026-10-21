@@ -6,16 +6,16 @@
 
 **Status**: Draft
 
-**Input**: User description: "from docs\spec\microservice-catalog.spec.md create spec for US-CAT-04: Consultar lista de locais de espetáculo (Venues) disponíveis para venda. respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
+**Input**: User description: "from docs\spec\catalog-service.spec.md create spec for US-CAT-04: Consultar lista de locais de espetáculo (Venues) disponíveis para venda. respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog_spec.md` (US-CAT-04, RN07), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3).
+**Origem**: `catalog-service_spec.md` (US-CAT-04, RN07), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3).
 
 **Dependência**: US-CAT-10 (CRUD de `Venue`/`Section`) — esta feature é somente leitura sobre dados escritos por US-CAT-10; não há valor de teste E2E completo sem venues previamente cadastrados.
 
 ## Correções aplicadas nesta versão
 
 1. **Ordenação alfabética não é derivada de RN07**: RN07 trata exclusivamente de unicidade de nome (`UNIQUE (name)`, não vazio). Não há RN, US ou seção de `arquitetura-solucao.md` que defina ordenação como regra de negócio. Tratada aqui como decisão de UX proposta por esta spec, não como regra herdada.
-2. **Filtro por `city`/`state` marcado como extensão não coberta pela fonte**: nem `microservice-catalog_spec.md` nem `arquitetura-solucao.md` preveem esse filtro. A DDL de origem não possui índice em `city`/`state`. Mantido como capacidade proposta, com ambiguidade de match (exato vs. parcial/`ILIKE`) explicitada como decisão pendente.
+2. **Filtro por `city`/`state` marcado como extensão não coberta pela fonte**: nem `catalog-service_spec.md` nem `arquitetura-solucao.md` preveem esse filtro. A DDL de origem não possui índice em `city`/`state`. Mantido como capacidade proposta, com ambiguidade de match (exato vs. parcial/`ILIKE`) explicitada como decisão pendente.
 3. **Citação de "Constituição da Modernização, Princípios I a V" removida** — documento não existe entre as fontes fornecidas; citação não verificável.
 4. **Chave de cache `catalog:venues`** mantida como extensão proposta (não definida em `arquitetura-solucao.md` seção 10), agora referenciada explicitamente no FR correspondente, não apenas em Assumptions.
 5. Dependência de US-CAT-10 declarada explicitamente.
@@ -48,7 +48,7 @@ Como visitante navegando em um catálogo extenso de salas e arenas, quero navega
 
 **Independent Test**: Pode ser testado enviando requisições com parâmetros de paginação (`page`, `size`) e filtros opcionais de localização (`city`, `state`), validando os itens e metadados retornados.
 
-> Nota: o filtro por `city`/`state` é uma capacidade proposta por esta spec, sem lastro em `microservice-catalog_spec.md` ou `arquitetura-solucao.md`. A DDL de origem não indexa esses campos — se o volume de venues justificar, recomenda-se avaliar índice (`btree` para match exato, ou `pg_trgm`/`GIN` para busca parcial) antes de expor o filtro em produção.
+> Nota: o filtro por `city`/`state` é uma capacidade proposta por esta spec, sem lastro em `catalog-service_spec.md` ou `arquitetura-solucao.md`. A DDL de origem não indexa esses campos — se o volume de venues justificar, recomenda-se avaliar índice (`btree` para match exato, ou `pg_trgm`/`GIN` para busca parcial) antes de expor o filtro em produção.
 
 **Acceptance Scenarios**:
 
@@ -141,10 +141,10 @@ Como visitante planejando uma visita, quero que cada local na listagem apresente
 
 ## Assumptions
 
-- O `microservice-catalog` gerencia e possui autoridade sobre a tabela `catalog.venue` no PostgreSQL `catalog_db`; os dados consultados aqui são escritos por US-CAT-10.
+- O `catalog-service` gerencia e possui autoridade sobre a tabela `catalog.venue` no PostgreSQL `catalog_db`; os dados consultados aqui são escritos por US-CAT-10.
 - A estratégia de cache no Redis utiliza a chave `catalog:venues` com TTL de 1 hora, invalidada sempre que um local for cadastrado, alterado ou excluído via painel administrativo — contrato de chave proposto por esta spec, não definido em `arquitetura-solucao.md` seção 10 (que só define `catalog:event:{id}` e `catalog:shows:performance:{id}`).
 - O endpoint `GET /api/v1/venues` é público e livre de controle de acesso por token JWT (`arquitetura-solucao.md`, seção 15.4).
-- Ordenação alfabética e filtro por cidade/estado são decisões de UX/produto propostas por esta spec, não requisitos herdados de `microservice-catalog_spec.md`.
+- Ordenação alfabética e filtro por cidade/estado são decisões de UX/produto propostas por esta spec, não requisitos herdados de `catalog-service_spec.md`.
 - Meta de latência p95 <= 250 ms (PR-001/FR-010) é proposta desta spec, não confirmada em documento de arquitetura — sujeita a validação em teste de carga antes de virar SLO.
 - Respostas de erro utilizam estritamente o formato RFC 7807 Problem Details.
 
@@ -154,12 +154,12 @@ Como visitante planejando uma visita, quero que cada local na listagem apresente
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001, FR-002 | `microservice-catalog_spec.md` US-CAT-04 | Consulta da lista de locais (Venues) |
+| FR-001, FR-002 | `catalog-service_spec.md` US-CAT-04 | Consulta da lista de locais (Venues) |
 | FR-003 | `arquitetura-solucao.md` seção 15.4 | Acesso público ao endpoint `GET /venues` |
 | FR-004 | `arquitetura-solucao.md` seção 25.3 (correção de RN42) | Paginação `page`/`size` base 0 |
 | FR-005 | Extensão local (não herdada) | Filtro por cidade/estado — sem índice na DDL de origem |
 | FR-006 | Extensão local (não herdada) | Ordenação alfabética — não é RN07 (unicidade), correção de citação |
 | FR-007, FR-008 | `arquitetura-solucao.md` seção 8 | Tratamento de resposta vazia e erro RFC 7807 |
-| FR-009 | Padrão de testes adotado nas specs anteriores do `microservice-catalog` | — |
+| FR-009 | Padrão de testes adotado nas specs anteriores do `catalog-service` | — |
 | FR-010 / PR-001 | Meta proposta, sem lastro documental | Citação anterior a "Constituição da Modernização" removida (documento não existe entre as fontes) |
-| Dependência de US-CAT-10 | Análise de ordenação de tarefas do `microservice-catalog` | Leitura depende de escrita prévia |
+| Dependência de US-CAT-10 | Análise de ordenação de tarefas do `catalog-service` | Leitura depende de escrita prévia |

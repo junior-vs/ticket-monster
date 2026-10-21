@@ -8,5 +8,9 @@
   <packaging>pom</packaging>
   <name>ticket-monster</name>
 
+  <modules>
+    <module>catalog-service</module>
+  </modules>
+
 
 </project>

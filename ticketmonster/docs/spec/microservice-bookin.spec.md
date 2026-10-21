@@ -64,7 +64,7 @@ Complementa `microservice-bookin_spec.md`. Detalha o schema PostgreSQL (`booking
 
 ## 1. Decisões de Modelagem
 
-* **Chave primária `UUID`:** consistente com os demais serviços (ver `microservice-catalog_data_model.md`, seção 1). O `booking.id` é o identificador propagado nos eventos de domínio e correlacionado na trilha de auditoria de `microservice-telemetry`.
+* **Chave primária `UUID`:** consistente com os demais serviços (ver `catalog-service_data_model.md`, seção 1). O `booking.id` é o identificador propagado nos eventos de domínio e correlacionado na trilha de auditoria de `microservice-telemetry`.
 * **Sem FKs para outros bancos:** `performance_id` (referência a `catalog`), `ticket_price_id` e `section_id` (referência a `inventory`) são armazenados como colunas simples (UUID), **sem constraint de FK** — são referências lógicas entre serviços, validadas em tempo de execução (chamada síncrona ou consumo de evento), nunca por *foreign key* de banco, pois `booking_db` é um banco isolado (*Database per Service*).
 * **`cancellation_code_hash` em vez de código em texto plano:** corrige a falha crítica do legado (RN29/RN30 as-is: código fixo `"abc"`, sem validação). O código gerado (UUID) é entregue ao comprador **uma única vez** na confirmação e apenas seu hash (SHA-256 ou bcrypt) é persistido — o serviço nunca consegue reexibir o código original, apenas validar um valor recebido contra o hash.
 * **`owner_subject` nullable:** suporta tanto reserva autenticada (Keycloak `sub`) quanto *guest checkout* (fallback por e-mail + código de cancelamento), conforme RN-NOVA-01/US-BOOK-10.

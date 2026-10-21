@@ -19,7 +19,7 @@ Fora de escopo: lógica de negócio de cada microsserviço (coberta pelas specs 
 
 ## Dependência com as demais specs
 
-Todas as specs de US já produzidas (US-CAT-01 a US-CAT-14, e futuras de `inventory`/`booking`/`telemetry`) assumem, sem detalhar, a existência de: Postgres acessível por schema próprio, Redis para cache-aside/locks, Keycloak emitindo JWT validável via JWKS, e OpenTelemetry coletando traces/métricas. Esta spec é pré-requisito de infraestrutura (Fase -1) para todas as fases funcionais já mapeadas na análise de dependências do `microservice-catalog`.
+Todas as specs de US já produzidas (US-CAT-01 a US-CAT-14, e futuras de `inventory`/`booking`/`telemetry`) assumem, sem detalhar, a existência de: Postgres acessível por schema próprio, Redis para cache-aside/locks, Keycloak emitindo JWT validável via JWKS, e OpenTelemetry coletando traces/métricas. Esta spec é pré-requisito de infraestrutura (Fase -1) para todas as fases funcionais já mapeadas na análise de dependências do `catalog-service`.
 
 ---
 
@@ -51,7 +51,7 @@ Como Engenheiro de Plataforma, quero provisionar Redis com pools/databases lógi
 
 **Acceptance Scenarios**:
 
-1. **Given** o Redis provisionado, **When** o `microservice-catalog` grava uma chave de cache-aside, **Then** a chave expira dentro do TTL configurado (ex.: 1 hora para catálogo, conforme proposto nas specs US-CAT-04/05).
+1. **Given** o Redis provisionado, **When** o `catalog-service` grava uma chave de cache-aside, **Then** a chave expira dentro do TTL configurado (ex.: 1 hora para catálogo, conforme proposto nas specs US-CAT-04/05).
 2. **Given** o Redis provisionado, **When** o `microservice-inventory` executa `SET NX PX 60000` para um lock de assento, **Then** o lock expira automaticamente em exatos 60.000 ms sem intervenção manual (RN23, CA-INV-01-LOK).
 3. **Given** picos de contenção em locks de assento, **When** o pool de conexões é avaliado, **Then** o pool dedicado a locks de assento é isolado do pool dedicado a cache de catálogo/leitura (Bulkhead — seção 20.6), evitando que um exaustão de conexões de lock afete o catálogo público.
 4. **Given** falha temporária do Redis, **When** qualquer serviço consumidor tenta uma leitura de cache, **Then** o serviço realiza fallback transparente para o PostgreSQL sem erro 500 (padrão já assumido nas specs US-CAT-01/04/05).

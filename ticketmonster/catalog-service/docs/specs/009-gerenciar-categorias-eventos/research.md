@@ -3,7 +3,7 @@
 ## 1. Domain Architecture & Layering
 
 ### Decision
-Adotar **Clean Architecture (Hexagonal)** com separação estrita em 4 camadas internas no microsserviço `microservice-catalog`:
+Adotar **Clean Architecture (Hexagonal)** com separação estrita em 4 camadas internas no microsserviço `catalog-service`:
 - `adapter-in`: REST Resources (JAX-RS / RESTEasy Reactive) + DTOs.
 - `application`: Use Cases / Application Services (`CreateEventCategoryUseCase`, `UpdateEventCategoryUseCase`, `DeleteEventCategoryUseCase`, `ListEventCategoriesUseCase`).
 - `domain`: Entidade `EventCategory` (pura/framework-agnostic com normalização `trim()`), Value Objects e Exceções de Domínio.

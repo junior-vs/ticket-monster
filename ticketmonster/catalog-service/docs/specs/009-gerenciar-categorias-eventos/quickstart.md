@@ -14,15 +14,15 @@ Este guia apresenta o procedimento operacional e os comandos necessários para v
 
 ## 2. Execução dos Testes Automatizados
 
-### Rodar a suite completa de testes de `microservice-catalog`
+### Rodar a suite completa de testes de `catalog-service`
 ```bash
-cd microservice-catalog
+cd catalog-service
 ./mvnw clean test
 ```
 
 ### Rodar especificamente a suite de categorias (Unitários, Integração e E2E P1)
 ```bash
-cd microservice-catalog
+cd catalog-service
 ./mvnw test -Dtest=EventCategoryResourceTest,EventCategoryResourceCacheTest,EventCategoryRepositoryTest
 ```
 

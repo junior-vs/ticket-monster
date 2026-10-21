@@ -1,18 +1,18 @@
 # Implementation Plan: US-CAT-12 - Cadastrar Itens de Mídia com Validação e Fallback
 
-**Branch**: `012-cadastrar-itens-midia` | **Date**: 2026-07-29 | **Spec**: `microservice-catalog/specs/012-cadastrar-itens-midia/spec.md`
+**Branch**: `012-cadastrar-itens-midia` | **Date**: 2026-07-29 | **Spec**: `catalog-service/specs/012-cadastrar-itens-midia/spec.md`
 
-**Input**: Feature specification from `microservice-catalog/specs/012-cadastrar-itens-midia/spec.md`
+**Input**: Feature specification from `catalog-service/specs/012-cadastrar-itens-midia/spec.md`
 
 ## Summary
 
-Implementar CRUD administrativo para `MediaItem` no `microservice-catalog` com validação síncrona não-bloqueante de URL (client HTTP reativo, timeout 250ms), aplicação automática de fallback (`not_available.jpg`) quando a URL remota falha, catálogo extensível de tipos de mídia via `media_type_catalog` (IMAGE/VIDEO/AUDIO), cache-aside Redis para leitura individual e exclusão com desvinculação automática de eventos (`ON DELETE SET NULL`). Validações estruturais (esquema http/https, unicidade de URL) são garantidas por constraints PostgreSQL e por validação de domínio prévia. Erros seguem RFC 7807.
+Implementar CRUD administrativo para `MediaItem` no `catalog-service` com validação síncrona não-bloqueante de URL (client HTTP reativo, timeout 250ms), aplicação automática de fallback (`not_available.jpg`) quando a URL remota falha, catálogo extensível de tipos de mídia via `media_type_catalog` (IMAGE/VIDEO/AUDIO), cache-aside Redis para leitura individual e exclusão com desvinculação automática de eventos (`ON DELETE SET NULL`). Validações estruturais (esquema http/https, unicidade de URL) são garantidas por constraints PostgreSQL e por validação de domínio prévia. Erros seguem RFC 7807.
 
 A solução usa Quarkus REST reativo (RESTEasy Reactive + Mutiny), camada de aplicação com casos de uso (`CreateMediaItemUseCase`, `DeleteMediaItemUseCase`, `GetMediaItemUseCase`, `ListMediaItemsUseCase`), domínio sem dependências de framework, persistência via Hibernate Reactive Panache/PostgreSQL, cache-aside Redis (`catalog:media-item:{id}`) e validador de URL remoto baseado em `quarkus-rest-client-reactive` ou `Vert.x WebClient` não-bloqueante.
 
 ## Technical Context
 
-**Language/Version**: Java 25 conforme `microservice-catalog/pom.xml` (`maven.compiler.release=25`). A constituição define Java 21 como baseline mínimo; Java 25 é uma versão acima do baseline e deve ser mantida apenas se o runtime alvo suportar esse release.
+**Language/Version**: Java 25 conforme `catalog-service/pom.xml` (`maven.compiler.release=25`). A constituição define Java 21 como baseline mínimo; Java 25 é uma versão acima do baseline e deve ser mantida apenas se o runtime alvo suportar esse release.
 
 **Primary Dependencies**: Quarkus 3.37.4; `quarkus-rest`, `quarkus-rest-jackson`, `quarkus-hibernate-reactive-panache`, `quarkus-reactive-pg-client`, `quarkus-jdbc-postgresql`, `quarkus-liquibase`, `quarkus-redis-client`, `quarkus-messaging-kafka`, `quarkus-oidc`, `quarkus-opentelemetry`, `quarkus-micrometer-registry-prometheus`, `quarkus-smallrye-health`, `quarkus-smallrye-fault-tolerance`, `quarkus-rest-client-reactive` (para o HTTP check de URL remota usando `@Timeout`/`@CircuitBreaker` do SmallRye Fault Tolerance) ou `quarkus-vertx-web-client` (Vert.x `WebClient` reativo nativo com timeout configurado).
 
@@ -20,9 +20,9 @@ A solução usa Quarkus REST reativo (RESTEasy Reactive + Mutiny), camada de apl
 
 **Testing**: Maven com Quarkus JUnit e REST Assured. Plano de testes: (1) unitários de domínio — validação de esquema de URL, regra de fallback, validação de `media_type_code` habilitado; (2) testes de contrato REST — endpoints admin GET/POST/DELETE; (3) integração com Testcontainers PostgreSQL + Redis para fluxos CRUD completos, incluindo validação de constraint `uq_media_item_url` (HTTP 409) e `ck_media_item_url_scheme`; (4) teste E2E da jornada P1 com mock de servidor HTTP remoto (WireMock ou similar) cobrindo dois cenários: URL remota acessível (`fallback_applied = false`) e URL remota inacessível/timeout (`fallback_applied = true`); (5) teste unitário da exclusão de MediaItem vinculado a Event confirmando `event.media_item_id = NULL` resultante.
 
-**Target Platform**: Microsserviço backend Quarkus executando em container Linux/Kubernetes ou local via Docker Compose compartilhado (`microservice-catalog/docker-compose.yml`).
+**Target Platform**: Microsserviço backend Quarkus executando em container Linux/Kubernetes ou local via Docker Compose compartilhado (`catalog-service/docker-compose.yml`).
 
-**Project Type**: Web service REST reativo em arquitetura limpa/hexagonal dentro de `microservice-catalog`.
+**Project Type**: Web service REST reativo em arquitetura limpa/hexagonal dentro de `catalog-service`.
 
 **Performance Goals**: Escrita administrativa p95 <= 300 ms (proposto por esta spec, sujeito a validação de carga — ver Assumptions); check remoto de URL timeout <= 250 ms sem bloquear thread; erro 5xx em steady-state < 0,1% para esta feature (PR-001).
 
@@ -47,7 +47,7 @@ Post-design re-check: PASS. Artefatos de fase 1 confirmam aderência: (a) data-m
 ### Documentation (this feature)
 
 ```text
-microservice-catalog/specs/012-cadastrar-itens-midia/
+catalog-service/specs/012-cadastrar-itens-midia/
 ├── plan.md
 ├── research.md
 ├── data-model.md
@@ -60,7 +60,7 @@ microservice-catalog/specs/012-cadastrar-itens-midia/
 ### Source Code (repository root)
 
 ```text
-microservice-catalog/
+catalog-service/
 ├── pom.xml
 ├── src/main/java/br/vsjr/labs/ticketmoster/
 │   ├── catalog/media/domain/
@@ -112,7 +112,7 @@ microservice-catalog/
         └── urlcheck/ (unit com mock WebClient)
 ```
 
-**Structure Decision**: Usar módulo único Quarkus do `microservice-catalog` com pacotes por agregado `catalog.media.*` e fronteiras lógicas de clean architecture (domain/application/adapter-in/adapter-out). O `V1__init.sql` já contém a DDL correta (`media_type_catalog`, `media_item`, FK em `event.media_item_id ... ON DELETE SET NULL`); nenhuma migração adicional é necessária nesta feature. A verificação de URL remota usa `Vertx WebClient` reativo já incluído transitivamente pela stack Quarkus REST/HTTP, evitando dependência de `quarkus-rest-client-reactive` para manter footprint pequeno.
+**Structure Decision**: Usar módulo único Quarkus do `catalog-service` com pacotes por agregado `catalog.media.*` e fronteiras lógicas de clean architecture (domain/application/adapter-in/adapter-out). O `V1__init.sql` já contém a DDL correta (`media_type_catalog`, `media_item`, FK em `event.media_item_id ... ON DELETE SET NULL`); nenhuma migração adicional é necessária nesta feature. A verificação de URL remota usa `Vertx WebClient` reativo já incluído transitivamente pela stack Quarkus REST/HTTP, evitando dependência de `quarkus-rest-client-reactive` para manter footprint pequeno.
 
 ## Complexity Tracking
 

@@ -4,8 +4,8 @@ Production deployments must source these values from Vault and expose them to wo
 
 | Secret key | Consumer | Local dev value |
 |---|---|---|
-| `CATALOG_DB_USER` | `microservice-catalog` | `catalog_user` |
-| `CATALOG_DB_PASSWORD` | `microservice-catalog` | `catalog_password` |
+| `CATALOG_DB_USER` | `catalog-service` | `catalog_user` |
+| `CATALOG_DB_PASSWORD` | `catalog-service` | `catalog_password` |
 | `INVENTORY_DB_USER` | `microservice-inventory` | `inventory_user` |
 | `INVENTORY_DB_PASSWORD` | `microservice-inventory` | `inventory_password` |
 | `BOOKING_DB_USER` | `microservice-booking` | `booking_user` |

@@ -4,7 +4,7 @@
 * **Banco de Dados:** PostgreSQL (`inventory_db`) para persistência do estado permanente + Redis para controle de locks de assentos em tempo real.
 * **APIs Expostas:** Reactive REST para verificar disponibilidade e solicitar bloqueio de assentos.
 * **Eventos Consumidos:** `BookingInitiatedEvent` (para manter os assentos travados), `BookingConfirmedEvent` (para persistir a ocupação definitiva), `BookingCancelledEvent` / `BookingFailedEvent` (para liberar os assentos).
-* **Dependências:** `microservice-catalog` (apenas para leitura de estrutura de seções via cache).
+* **Dependências:** `catalog-service` (apenas para leitura de estrutura de seções via cache).
 
 
 ### Responsabilidade
@@ -55,7 +55,7 @@ Complementa `microservice-inventory_spec.md`. Detalha o schema PostgreSQL (`inve
 * **Divisão de responsabilidade Postgres vs. Redis:** este é o único serviço com dois armazenamentos de estado com papéis distintos e não intercambiáveis:
   * **Redis** — fonte de verdade para o **bloqueio temporário** de assentos durante o checkout (TTL de 60s, RN23), com granularidade por assento individual (`lock:seat:{perfId}:{secId}:{row}:{num}`).
   * **PostgreSQL** — fonte de verdade **permanente** do assento após a Saga confirmar a compra (`OCCUPIED`), e histórico/auditoria de ocupação. O Postgres nunca guarda o lock efêmero de 60s — apenas o resultado final confirmado.
-* **Sem FKs para outros bancos:** `show_id`, `section_id`, `performance_id` são referências lógicas a `catalog_db`. Como o catálogo é *read-heavy* e raramente muda, este serviço mantém **tabelas de snapshot** (`section_snapshot`, `performance_snapshot`) populadas via consumo de eventos de domínio do `microservice-catalog`, evitando chamada síncrona a cada alocação de assento.
+* **Sem FKs para outros bancos:** `show_id`, `section_id`, `performance_id` são referências lógicas a `catalog_db`. Como o catálogo é *read-heavy* e raramente muda, este serviço mantém **tabelas de snapshot** (`section_snapshot`, `performance_snapshot`) populadas via consumo de eventos de domínio do `catalog-service`, evitando chamada síncrona a cada alocação de assento.
 * **`seat_ledger` como registro definitivo (fonte da verdade pós-confirmação):** substitui a matriz `@Lob` (bitmap serializado) do legado (`SectionAllocation.allocation`) por uma linha por assento, auditável e consultável via SQL — o legado armazenava um blob binário opaco, impossível de indexar ou depurar diretamente.
 * **Índice único parcial como última linha de defesa (RN22):** mesmo com o lock atômico do Redis (`SET NX`) sendo o mecanismo primário de exclusão mútua, um índice único parcial em `seat_ledger` garante, a nível de banco, que nunca existam duas linhas `OCCUPIED` para o mesmo assento — defesa em profundidade contra bugs ou condições de corrida no código da aplicação.
 
@@ -223,6 +223,6 @@ O `seat_ledger` só é escrito em dois momentos: (1) `RESERVED_PENDING`, opciona
 
 ## 6. Notas de Operação
 
-* **Sincronização dos snapshots:** consumidor Kafka dedicado escuta eventos `SectionCreated/Updated`, `PerformanceScheduled` do `microservice-catalog` e faz *upsert* em `section_snapshot`/`performance_snapshot`. Se o evento chegar fora de ordem, `synced_at` permite detectar e descartar atualizações mais antigas que o estado atual.
+* **Sincronização dos snapshots:** consumidor Kafka dedicado escuta eventos `SectionCreated/Updated`, `PerformanceScheduled` do `catalog-service` e faz *upsert* em `section_snapshot`/`performance_snapshot`. Se o evento chegar fora de ordem, `synced_at` permite detectar e descartar atualizações mais antigas que o estado atual.
 * **Reconciliação Redis ↔ Postgres:** job periódico (ex.: a cada 5 min) compara locks ativos no Redis com linhas `RESERVED_PENDING` sem `confirmed_at`/`released_at` há mais tempo que o TTL esperado, sinalizando inconsistência para alerta operacional — não deveria ocorrer em operação normal, mas cobre falhas de infraestrutura.
 * **Particionamento:** `seat_ledger` é a tabela de maior volume potencial (uma linha por assento vendido); se necessário, particionar por `performance_id` (hash) ou por período de `confirmed_at` (range mensal) conforme volume real observado em produção.

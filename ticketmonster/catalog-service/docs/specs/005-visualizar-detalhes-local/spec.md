@@ -6,9 +6,9 @@
 
 **Status**: Draft
 
-**Input**: User description: "from docs\spec\microservice-catalog.spec.md create spec for US-CAT-05: Visualizar detalhes de um local de espetáculo (capacidade total, seções físicas e endereço). respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
+**Input**: User description: "from docs\spec\catalog-service.spec.md create spec for US-CAT-05: Visualizar detalhes de um local de espetáculo (capacidade total, seções físicas e endereço). respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
 
-**Origem**: `docs/spec/microservice-catalog.spec.md` (US-CAT-05, RN07, RN11, RN12), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
+**Origem**: `docs/spec/catalog-service.spec.md` (US-CAT-05, RN07, RN11, RN12), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
 
 ---
 
@@ -42,16 +42,16 @@ Como comprador planejando uma reserva, quero que a capacidade de cada seção f�
 
 **Status**: Draft
 
-**Input**: User description: "from docs\spec\microservice-catalog.spec.md create spec for US-CAT-05: Visualizar detalhes de um local de espetáculo (capacidade total, seções físicas e endereço). respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
+**Input**: User description: "from docs\spec\catalog-service.spec.md create spec for US-CAT-05: Visualizar detalhes de um local de espetáculo (capacidade total, seções físicas e endereço). respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog_spec.md` (US-CAT-05, RN12), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4).
+**Origem**: `catalog-service_spec.md` (US-CAT-05, RN12), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4).
 
 **Dependências**: US-CAT-10 (CRUD de `Venue`/`Section`) — dependência funcional obrigatória, pois esta feature lê dados escritos por US-CAT-10. **Não** há dependência funcional de US-CAT-04 (listagem pública) — são duas leituras paralelas, independentes entre si, ambas apoiadas em US-CAT-10; o agrupamento na mesma fase de backlog é de ordenação de entrega, não de dependência de dados.
 
 ## Correções aplicadas nesta versão
 
 1. **Citação incorreta de RN07/RN11 removida**: essas RNs tratam de unicidade de nome (Venue e Section), não de composição do payload de detalhe. Apenas RN12 (cálculo de capacidade da seção) é de fato aplicável a esta US.
-2. **`totalCapacity` marcado como agregação nova, não herdada**: nem `microservice-catalog_spec.md` nem a DDL definem capacidade total agregada por Venue — apenas `Section.capacity` é coluna gerada. A soma das seções é uma decisão de produto desta spec.
+2. **`totalCapacity` marcado como agregação nova, não herdada**: nem `catalog-service_spec.md` nem a DDL definem capacidade total agregada por Venue — apenas `Section.capacity` é coluna gerada. A soma das seções é uma decisão de produto desta spec.
 3. **Citação de "Constituição da Modernização, Princípios III e V" removida** — documento não existe entre as fontes fornecidas.
 4. **Chave de cache `catalog:venue:{id}` marcada como extensão proposta**, sem contrato definido em `arquitetura-solucao.md` seção 10.
 5. **Dependência de US-CAT-04 removida do vínculo funcional** — mantida apenas a dependência real de US-CAT-10.
@@ -175,7 +175,7 @@ Como visitante ou aplicativo cliente, quero receber as informações de endereç
 
 ## Assumptions
 
-- O `microservice-catalog` gerencia e possui autoridade exclusiva sobre as tabelas `catalog.venue` e `catalog.section` no banco PostgreSQL `catalog_db`; os dados consultados aqui são escritos por US-CAT-10.
+- O `catalog-service` gerencia e possui autoridade exclusiva sobre as tabelas `catalog.venue` e `catalog.section` no banco PostgreSQL `catalog_db`; os dados consultados aqui são escritos por US-CAT-10.
 - A capacidade da seção física é mantida como coluna gerada no banco relacional (`capacity INT GENERATED ALWAYS AS (number_of_rows * row_capacity) STORED`) (RN12). `totalCapacity` do Venue não tem equivalente na DDL — é uma agregação de leitura desta feature, recalculada a cada consulta (ou a cada atualização de cache).
 - A estratégia de cache no Redis utiliza a chave `catalog:venue:{id}` com TTL de 1 hora, invalidada sempre que o venue ou suas seções sofrerem alteração administrativa — contrato de chave proposto por esta spec, não definido em `arquitetura-solucao.md` seção 10.
 - O endpoint `GET /api/v1/venues/{id}` é público e não exige autenticação JWT (`arquitetura-solucao.md`, seção 15.4).
@@ -187,16 +187,16 @@ Como visitante ou aplicativo cliente, quero receber as informações de endereç
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001 | `microservice-catalog_spec.md` US-CAT-05 | Endpoint de detalhe |
+| FR-001 | `catalog-service_spec.md` US-CAT-05 | Endpoint de detalhe |
 | FR-002 | US-CAT-05 | Campos do payload; `totalCapacity` é extensão (ver FR-007) |
 | FR-003 | RN12 | Capacidade de seção via coluna gerada |
 | FR-004, FR-005 | `arquitetura-solucao.md` seção 8 | Erros 404 e 400 em formato RFC 7807 Problem Details |
 | FR-006 | `arquitetura-solucao.md` seção 15.4 | Endpoint público `GET /venues/{id}` |
 | FR-007 | Extensão local (não herdada) | Agregação `totalCapacity` — sem RN ou coluna correspondente na DDL |
 | FR-008 | Consequência lógica de FR-007 com zero seções | — |
-| FR-009 | Padrão de testes adotado nas specs anteriores do `microservice-catalog` | — |
+| FR-009 | Padrão de testes adotado nas specs anteriores do `catalog-service` | — |
 | FR-010 / PR-001 | Meta proposta, sem lastro documental | Citação anterior a "Constituição da Modernização" removida (documento não existe entre as fontes) |
-| Dependência de US-CAT-10 | Análise de ordenação de tarefas do `microservice-catalog` | Leitura depende de escrita prévia; dependência de US-CAT-04 removida por não ser funcional |
+| Dependência de US-CAT-10 | Análise de ordenação de tarefas do `catalog-service` | Leitura depende de escrita prévia; dependência de US-CAT-04 removida por não ser funcional |
 
 **Independent Test**: Pode ser testado validando que a propriedade `capacity` de cada seção corresponde exatamente à multiplicação `numberOfRows * rowCapacity` (calculada como coluna gerada no banco relacional - RN12) e que a propriedade `totalCapacity` do Venue é a soma exata das capacidades de suas seções.
 
@@ -290,7 +290,7 @@ Como visitante ou aplicativo cliente, quero receber as informações de endereç
 
 ## Assumptions
 
-- O `microservice-catalog` gerencia e possui autoridade exclusiva sobre as tabelas `catalog.venue` e `catalog.section` no banco PostgreSQL `catalog_db`.
+- O `catalog-service` gerencia e possui autoridade exclusiva sobre as tabelas `catalog.venue` e `catalog.section` no banco PostgreSQL `catalog_db`.
 - A capacidade da seção física é mantida como coluna gerada no banco relacional (`capacity INT GENERATED ALWAYS AS (number_of_rows * row_capacity) STORED`) (RN12).
 - A estratégia de cache no Redis utiliza a chave `catalog:venue:{id}` com TTL de 1 hora, invalidada sempre que o venue ou suas seções sofrerem alteração administrativa.
 - O endpoint `GET /api/v1/venues/{id}` é público e não exige autenticação JWT (`arquitetura-solucao.md`, seção 15.4).
@@ -301,8 +301,8 @@ Como visitante ou aplicativo cliente, quero receber as informações de endereç
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001, FR-002, FR-003 | `microservice-catalog.spec.md` US-CAT-05, RN07, RN11, RN12 | Detalhes do local e seções físicas |
+| FR-001, FR-002, FR-003 | `catalog-service.spec.md` US-CAT-05, RN07, RN11, RN12 | Detalhes do local e seções físicas |
 | FR-004, FR-005 | `arquitetura-solucao.md` seção 8 | Erros 404 e 400 em formato RFC 7807 Problem Details |
 | FR-006 | `arquitetura-solucao.md` seção 15.4 | Endpoint público `GET /venues/{id}` |
-| FR-007, FR-008 | `microservice-catalog.spec.md` RN12 | Agregação de capacidade total do local |
+| FR-007, FR-008 | `catalog-service.spec.md` RN12 | Agregação de capacidade total do local |
 | FR-009, FR-010 | Constituição da Modernização, Princípios III e V | Qualidade de testes automatizados e latência p95 <= 250ms |

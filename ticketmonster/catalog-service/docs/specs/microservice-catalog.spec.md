@@ -1,5 +1,5 @@
 ---
-title: Especificação — microservice-catalog
+title: Especificação — catalog-service
 version: 2.0
 status: Consolidada (fonte única)
 bounded-context: Catalog + Scheduling (Core)
@@ -7,10 +7,10 @@ origem:
   - arquitetura-solucao.md (seções 4, 5, 6, 8, 9, 10, 14, 15.4, 25)
   - projeto-legado.md (seções 11, 14, 15)
   - .specify/memory/constitution.md (Princípios I–V)
-substitui: docs/spec/microservice-catalog.spec.md (removido; era subconjunto deste)
+substitui: docs/spec/catalog-service.spec.md (removido; era subconjunto deste)
 ---
 
-# `microservice-catalog`
+# `catalog-service`
 
 > **Fonte única de verdade** da especificação do catálogo. Qualquer alteração de RN/US/CA é feita aqui; as specs `specs/NNN-*/` detalham cada US e devem apontar para este arquivo.
 
@@ -449,7 +449,7 @@ Por US: testes unitários de domínio; contrato REST (OpenAPI em `specs/NNN/cont
 
 ## 13. Histórico de consolidação (v1 → v2)
 
-Fontes unificadas: `microservice-catalog/specs/microservice-catalog.spec.md` (578 linhas) e `docs/spec/microservice-catalog.spec.md` (285 linhas, subconjunto estrito do primeiro).
+Fontes unificadas: `catalog-service/specs/catalog-service.spec.md` (578 linhas) e `docs/spec/catalog-service.spec.md` (285 linhas, subconjunto estrito do primeiro).
 
 **Mantido sem alteração de conteúdo:** responsabilidade, todas as RN (RN01–RN12, RN34, RN35, RN37), as 3 alterações `[ALTERA/NOVO]`, as 14 US, os 3 CAs, decisões de modelagem, diagrama ER, mapeamento RN→estrutura, estrutura de pacotes, fluxo `EventCategory`, análise de dependências e lista ordenada de tarefas.
 
@@ -463,4 +463,4 @@ Fontes unificadas: `microservice-catalog/specs/microservice-catalog.spec.md` (57
 
 **Acrescentado:** seções 5 (contratos transversais), 10 (testes), 11 (lacunas), CAs `[PROPOSTO]`, RN42, RN-NOVA-02 e dependências faltantes (CAT-03 ← CAT-12).
 
-**Ações no repositório:** remover `docs/spec/microservice-catalog.spec.md`; atualizar a origem em `specs/003`, `004`, `005`, `006`, `007` e `010`.
+**Ações no repositório:** remover `docs/spec/catalog-service.spec.md`; atualizar a origem em `specs/003`, `004`, `005`, `006`, `007` e `010`.

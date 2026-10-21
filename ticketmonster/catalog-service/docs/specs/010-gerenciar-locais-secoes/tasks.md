@@ -1,6 +1,6 @@
 # Tasks: Gerenciar Locais Físicos e Seções Estruturais (Admin)
 
-**Input**: Design documents from `microservice-catalog/specs/010-gerenciar-locais-secoes/`
+**Input**: Design documents from `catalog-service/specs/010-gerenciar-locais-secoes/`
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), data-model.md
 
@@ -12,7 +12,7 @@
 
 - **[P]**: Pode rodar em paralelo (arquivos diferentes, sem dependência)
 - **[Story]**: US1–US5
-- Caminhos de arquivo relativos a `microservice-catalog/src/...`, pacote raiz `br.vsjr.labs.ticketmonster.catalog`
+- Caminhos de arquivo relativos a `catalog-service/src/...`, pacote raiz `br.vsjr.labs.ticketmonster.catalog`
 
 ---
 

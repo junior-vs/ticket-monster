@@ -9,7 +9,7 @@ A paginação em serviços de leitura de alta concorrência exige desacoplar a c
 Aprovado
 
 ### Contexto
-O endpoint `GET /v1/events/published` do `microservice-catalog` atende picos de tráfego de leitura pública. A consulta precisa responder em p95 ≤ 250ms (PR-001) com suporte a filtros dinâmicos e paginação.
+O endpoint `GET /v1/events/published` do `catalog-service` atende picos de tráfego de leitura pública. A consulta precisa responder em p95 ≤ 250ms (PR-001) com suporte a filtros dinâmicos e paginação.
 
 ### Decisão
 1. Adotar **Mutiny (`Uni<T>`)** para todo o pipeline de I/O de consulta e cache.

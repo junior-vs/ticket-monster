@@ -151,7 +151,7 @@ C4Context
 
 ## 6. Microsserviços Propostos
 
-### 1. `microservice-catalog`
+### 1. `catalog-service`
 * **Responsabilidade:** Cadastro e exibição de eventos, venues, seções e shows.
 * **Banco de Dados:** PostgreSQL (`catalog_db`). Altamente otimizado para leitura.
 * **Redis Cache:** Cache-Aside para reduzir acessos ao banco para listagens públicas de eventos e estruturas de Venues.
@@ -163,7 +163,7 @@ C4Context
 * **Banco de Dados:** PostgreSQL (`inventory_db`) para persistência do estado permanente + Redis para controle de locks de assentos em tempo real.
 * **APIs Expostas:** Reactive REST para verificar disponibilidade e solicitar bloqueio de assentos.
 * **Eventos Consumidos:** `BookingInitiatedEvent` (para manter os assentos travados), `BookingConfirmedEvent` (para persistir a ocupação definitiva), `BookingCancelledEvent` / `BookingFailedEvent` (para liberar os assentos).
-* **Dependências:** `microservice-catalog` (apenas para leitura de estrutura de seções via cache).
+* **Dependências:** `catalog-service` (apenas para leitura de estrutura de seções via cache).
 
 ### 3. `microservice-booking`
 * **Responsabilidade:** Gestão do ciclo de vida das reservas, validação do e-mail do cliente, emissão de tickets e orquestração do checkout.
@@ -605,7 +605,7 @@ A implantação foi desenhada para rodar em ambientes baseados em **Kubernetes**
 A migração será incremental, reduzindo o risco sistêmico. O monolito continuará em execução enquanto as partes forem substituídas:
 
 ### Fase 1: Desacoplamento do Catálogo e Frontend
-* **Ação:** Criação do `microservice-catalog`. O frontend antigo Backbone/AngularJS é modificado para apontar rotas de leitura de catálogo para o novo microsserviço.
+* **Ação:** Criação do `catalog-service`. O frontend antigo Backbone/AngularJS é modificado para apontar rotas de leitura de catálogo para o novo microsserviço.
 * **Sincronização:** Criação de um job CDC (Change Data Capture) via Debezium para manter as tabelas de eventos e venues sincronizadas entre o banco antigo e o banco do novo microsserviço.
 
 ### Fase 2: Modernização do Inventário (Eliminação do Lock Pessimista)
@@ -629,7 +629,7 @@ graph TD
     Client[Browser / Mobile Client] --> Gateway[API Gateway / BFF - ex. Kong, APISIX<br/>ou implementação própria em Quarkus reativo]
     Gateway --> Keycloak[Keycloak - IdP]
     
-    Gateway --> CatMS[microservice-catalog]
+    Gateway --> CatMS[catalog-service]
     Gateway --> InvMS[microservice-inventory]
     Gateway --> BookMS[microservice-booking]
     Gateway --> TeleMS[microservice-telemetry]
@@ -885,7 +885,7 @@ sequenceDiagram
 * Criação do ambiente Docker Compose local com Postgres, Redis e Kafka.
 
 ### Curto Prazo (90 dias)
-* Desenvolvimento e homologação do `microservice-catalog` e `microservice-inventory`.
+* Desenvolvimento e homologação do `catalog-service` e `microservice-inventory`.
 * Implementação do cache do catálogo e locks reativos de poltronas no Redis.
 
 ### Médio Prazo (180 dias)
@@ -923,7 +923,7 @@ Para o sucesso da modernização arquitetural do **TicketMonster**, recomendamos
 
 ### Próximos Passos
 4. Validar este documento com os times de plataforma e segurança.
-5. ~~Detalhar o modelo de dados (schemas Postgres) por serviço~~ — **concluído**: ver `microservice-catalog_data_model.md`, `microservice-inventory_data_model.md`, `microservice-booking_data_model.md` e `microservice-telemetry_data_model.md`.
+5. ~~Detalhar o modelo de dados (schemas Postgres) por serviço~~ — **concluído**: ver `catalog-service_data_model.md`, `microservice-inventory_data_model.md`, `microservice-booking_data_model.md` e `microservice-telemetry_data_model.md`.
 6. Elaborar ADRs individuais adicionais para decisões ainda em aberto (ex.: adoção futura de Token Exchange — ver seção 15.3 — e de Keycloak Authorization Services/UMA — ver seção 15.4.1).
 7. Priorizar a Fase 1 do roadmap (seção 22) com foco no `microservice-inventory`, por concentrar o maior risco técnico herdado do legado.
 

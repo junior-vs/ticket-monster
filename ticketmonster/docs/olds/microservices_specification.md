@@ -6,7 +6,7 @@ Este documento detalha as especificações funcionais e técnicas para cada um d
 
 ---
 
-## 1. Microsserviço: `microservice-catalog`
+## 1. Microsserviço: `catalog-service`
 
 ### Responsabilidade
 Gerenciamento das entidades de divulgação artística, locais físicos, shows cadastrados e a agenda temporal de apresentações (performances). É um serviço otimizado para leitura intensiva (*read-heavy*), cujos dados são expostos ao canal público de vendas e painel de administração.
@@ -148,7 +148,7 @@ Consumo de eventos de vendas para atualização de painéis de ocupação em tem
 
 Visão consolidada em `modernization_architecture.md`, seção 21. Abaixo, o detalhamento específico por microsserviço — cada item indica se **altera** uma RN as-is existente ou é **novo** (sem equivalente no legado).
 
-### 5.1 `microservice-catalog`
+### 5.1 `catalog-service`
 * **[ALTERA RN34]** O tipo de mídia deixa de ser um enum fechado (`IMAGE` apenas) e passa a ser um catálogo extensível (`IMAGE`, `VIDEO`, `AUDIO`), configurável sem redeploy do serviço.
 * **[NOVO]** `Event` passa a ter ciclo de vida explícito (`DRAFT` → `PUBLISHED` → `ARCHIVED`), em vez de existir implicitamente a partir do cadastro. Hoje qualquer `Event` criado no admin já aparece imediatamente no catálogo público.
 * **[NOVO]** `EventCategory` não pode ser excluída se houver `Event` associado (hoje o legado não impõe essa proteção explicitamente a nível de regra de negócio, apenas via eventual erro de integridade referencial do banco).

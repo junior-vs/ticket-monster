@@ -3,7 +3,7 @@
 **Feature Branch**: `011-agendamento-shows-performances`  
 **Created**: 2026-07-25  
 **Status**: Draft  
-**Input**: User description: "* **US-CAT-11:** Criar e alterar agendamentos de shows e suas performances temporais (Admin). respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-11:** Criar e alterar agendamentos de shows e suas performances temporais (Admin). respect: docs\\spec\\catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -126,6 +126,6 @@ Como um Administrador do sistema, quero cancelar uma Performance agendada que fo
 
 ## Assumptions
 
-- Implementação realizada no microsserviço `microservice-catalog` utilizando o schema `catalog.show` e `catalog.performance` no PostgreSQL (`catalog_db`).
+- Implementação realizada no microsserviço `catalog-service` utilizando o schema `catalog.show` e `catalog.performance` no PostgreSQL (`catalog_db`).
 - Autenticação e autorização providas pelo Keycloak JWT exigindo a role `ROLE_ADMIN`.
 - A integração com `microservice-inventory` para inicialização do mapa de assentos é disparada após o agendamento bem-sucedido de uma Performance.

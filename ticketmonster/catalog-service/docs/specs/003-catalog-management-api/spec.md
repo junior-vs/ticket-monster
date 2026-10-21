@@ -6,9 +6,9 @@
 
 **Status**: Draft
 
-**Input**: User description: "from docs\spec\microservice-catalog.spec.md create spec for US-CAT-03 through US-CAT-12 respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
+**Input**: User description: "from docs\spec\catalog-service.spec.md create spec for US-CAT-03 through US-CAT-12 respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
 
-**Origem**: `docs/spec/microservice-catalog.spec.md` (US-CAT-03 a US-CAT-12, RN01 a RN37), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
+**Origem**: `docs/spec/catalog-service.spec.md` (US-CAT-03 a US-CAT-12, RN01 a RN37), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
 
 ---
 
@@ -161,13 +161,13 @@ Como administrador do sistema, quero cadastrar itens de mídia promocional (imag
 
 - **PR-001**: A latência p95 para requisições públicas de detalhes de eventos, venues e agendas de shows DEVE ser <= 250 ms sob o perfil de carga acordado, utilizando a estratégia de cache-aside no Redis (`catalog:event:{id}`, `catalog:shows:performance:{id}`).
 - **PR-002**: O serviço DEVE sustentar a vazão de pico esperada em navegações de catálogo sem ultrapassar a taxa de erro de 1% no servidor (5xx).
-- **PR-003**: Em caso de queda do Redis, o `microservice-catalog` DEVE executar fallback de leitura direto na base PostgreSQL (`catalog_db`), preservando a funcionalidade e os contratos de resposta sem gerar erro 500.
+- **PR-003**: Em caso de queda do Redis, o `catalog-service` DEVE executar fallback de leitura direto na base PostgreSQL (`catalog_db`), preservando a funcionalidade e os contratos de resposta sem gerar erro 500.
 
 ---
 
 ## Assumptions
 
-- O `microservice-catalog` gerencia e possui autoridade exclusiva sobre o schema relacional `catalog` no banco PostgreSQL `catalog_db`.
+- O `catalog-service` gerencia e possui autoridade exclusiva sobre o schema relacional `catalog` no banco PostgreSQL `catalog_db`.
 - Operações de leitura de catálogo público utilizam Redis Cache-Aside (`catalog:event:{id}`, `catalog:venues`, `catalog:shows:{id}`) com TTL de 1 hora, invalidado por eventos de atualização ou publicação de catálogo (`arquitetura-solucao.md`, seção 10).
 - As permissões de acesso são validadas em cada microsserviço através da revalidação do token JWT repassado pelo API Gateway (*token relay*) e checagem da claim `realm_access.roles` (`ROLE_ADMIN`) (`arquitetura-solucao.md`, seção 15.3 e 15.4).
 - Respostas de erro utilizam estritamente o formato RFC 7807 Problem Details, conforme especificado na arquitetura de referência e na Constituição.
@@ -178,14 +178,14 @@ Como administrador do sistema, quero cadastrar itens de mídia promocional (imag
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001, FR-002 | `microservice-catalog.spec.md` US-CAT-03, RN35 | Detalhes do evento e fallback de mídia |
-| FR-003, FR-004 | `microservice-catalog.spec.md` US-CAT-04, US-CAT-05, RN12 | Lista e detalhes de Venues com seções geradas |
-| FR-005, FR-006 | `microservice-catalog.spec.md` US-CAT-06, US-CAT-07, RN09 | Agendas de shows e sessões (performances) |
+| FR-001, FR-002 | `catalog-service.spec.md` US-CAT-03, RN35 | Detalhes do evento e fallback de mídia |
+| FR-003, FR-004 | `catalog-service.spec.md` US-CAT-04, US-CAT-05, RN12 | Lista e detalhes de Venues com seções geradas |
+| FR-005, FR-006 | `catalog-service.spec.md` US-CAT-06, US-CAT-07, RN09 | Agendas de shows e sessões (performances) |
 | FR-007, FR-008 | `arquitetura-solucao.md` seção 15.4 (matriz RBAC) | Controle de acesso administrativo via `ROLE_ADMIN` |
-| FR-009, FR-010, FR-011 | `microservice-catalog.spec.md` US-CAT-08, RN01-RN04, `[NOVO]` | Gestão de eventos e ciclo de vida |
-| FR-012, FR-013 | `microservice-catalog.spec.md` US-CAT-09, RN06, `[NOVO]` | Categoria de evento e restrição de exclusão |
-| FR-014, FR-015 | `microservice-catalog.spec.md` US-CAT-10, RN07, RN11, RN12 | Cadastro de venues e seções físicas |
-| FR-016, FR-017 | `microservice-catalog.spec.md` US-CAT-11, RN08, RN09, RN10 | Agendamento de shows e unicidade de performances |
-| FR-018 | `microservice-catalog.spec.md` US-CAT-12, RN34 (alterada), RN37 | Cadastro de mídia e catálogo extensível |
+| FR-009, FR-010, FR-011 | `catalog-service.spec.md` US-CAT-08, RN01-RN04, `[NOVO]` | Gestão de eventos e ciclo de vida |
+| FR-012, FR-013 | `catalog-service.spec.md` US-CAT-09, RN06, `[NOVO]` | Categoria de evento e restrição de exclusão |
+| FR-014, FR-015 | `catalog-service.spec.md` US-CAT-10, RN07, RN11, RN12 | Cadastro de venues e seções físicas |
+| FR-016, FR-017 | `catalog-service.spec.md` US-CAT-11, RN08, RN09, RN10 | Agendamento de shows e unicidade de performances |
+| FR-018 | `catalog-service.spec.md` US-CAT-12, RN34 (alterada), RN37 | Cadastro de mídia e catálogo extensível |
 | FR-019 | `arquitetura-solucao.md` seção 8 | Resposta de erro RFC 7807 Problem Details |
 | FR-020, FR-021 | Constituição da Modernização, Princípios III e V | Qualidade de testes e orçamentos de desempenho |

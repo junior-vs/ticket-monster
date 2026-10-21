@@ -6,9 +6,9 @@
 
 **Status**: Draft
 
-**Input**: User description: "from docs\spec\microservice-catalog.spec.md create spec for US-CAT-06: Listar a agenda de shows vinculados a um determinado evento ou local. respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
+**Input**: User description: "from docs\spec\catalog-service.spec.md create spec for US-CAT-06: Listar a agenda de shows vinculados a um determinado evento ou local. respect E:\develop\repos\java-projects\ticket-monster\docs\arch\arquitetura-solucao.md"
 
-**Origem**: `docs/spec/microservice-catalog.spec.md` (US-CAT-06, RN08), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
+**Origem**: `docs/spec/catalog-service.spec.md` (US-CAT-06, RN08), `arquitetura-solucao.md` (seções 4, 6.1, 8, 10, 15.4, 25.3) e Constituição da Modernização (Princípios I a V).
 
 ---
 
@@ -131,7 +131,7 @@ Como visitante navegando pela agenda completa de shows, quero poder combinar pag
 
 ## Assumptions
 
-- O `microservice-catalog` gerencia a tabela `catalog.show` no banco PostgreSQL `catalog_db`.
+- O `catalog-service` gerencia a tabela `catalog.show` no banco PostgreSQL `catalog_db`.
 - A associação entre Evento e Venue é única por linha de tabela (`CONSTRAINT uq_show_event_venue UNIQUE (event_id, venue_id)` - RN08).
 - A estratégia de cache no Redis armazena os agendamentos de shows em chaves indexadas por evento e por venue com TTL de 1 hora.
 - O endpoint `GET /api/v1/shows` é público e livre de autenticação (`arquitetura-solucao.md`, seção 15.4).
@@ -142,7 +142,7 @@ Como visitante navegando pela agenda completa de shows, quero poder combinar pag
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001 a FR-005 | `microservice-catalog.spec.md` US-CAT-06, RN08 | Consulta de agenda de shows e associação única |
+| FR-001 a FR-005 | `catalog-service.spec.md` US-CAT-06, RN08 | Consulta de agenda de shows e associação única |
 | FR-006, FR-007 | `arquitetura-solucao.md` seção 8 | Respostas de erro RFC 7807 e lista vazia |
 | FR-008 | `arquitetura-solucao.md` seção 25.3 (RN42) | Paginação `page`/`size` base 0 |
 | FR-009 | `arquitetura-solucao.md` seção 15.4 | Endpoint público `GET /shows` |

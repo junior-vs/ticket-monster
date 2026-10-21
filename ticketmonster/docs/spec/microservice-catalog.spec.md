@@ -1,4 +1,4 @@
-## 1. `microservice-catalog`
+## 1. `catalog-service`
 * **Responsabilidade:** Cadastro e exibição de eventos, venues, seções e shows.
 * **Banco de Dados:** PostgreSQL (`catalog_db`). Altamente otimizado para leitura.
 * **Redis Cache:** Cache-Aside para reduzir acessos ao banco para listagens públicas de eventos e estruturas de Venues.
@@ -60,7 +60,7 @@ Gerenciamento das entidades de divulgação artística, locais físicos, shows c
 
 ---
 
-# Modelo de Dados — `microservice-catalog`
+# Modelo de Dados — `catalog-service`
 
 
 ## 1. Decisões de Modelagem

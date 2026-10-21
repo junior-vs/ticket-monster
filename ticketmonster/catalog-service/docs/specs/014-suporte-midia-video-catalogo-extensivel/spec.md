@@ -3,7 +3,7 @@
 **Feature Branch**: `014-suporte-midia-video-catalogo-extensivel`  
 **Created**: 2026-07-25  
 **Status**: Draft  
-**Input**: User description: "* **US-CAT-14 (nova):** Como administrador, quero cadastrar mídia em vídeo além de imagem, sem depender de alteração de código do serviço. respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-14 (nova):** Como administrador, quero cadastrar mídia em vídeo além de imagem, sem depender de alteração de código do serviço. respect: docs\\spec\\catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -25,9 +25,9 @@ Como um Administrador do sistema, quero cadastrar e habilitar novos tipos de mí
 **Feature Branch**: `014-suporte-midia-video-catalogo-extensivel`
 **Created**: 2026-07-25
 **Status**: Draft
-**Input**: User description: "* **US-CAT-14 (nova):** Como administrador, quero cadastrar mídia em vídeo além de imagem, sem depender de alteração de código do serviço. respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-14 (nova):** Como administrador, quero cadastrar mídia em vídeo além de imagem, sem depender de alteração de código do serviço. respect: docs\\spec\\catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog_spec.md` — US-CAT-14, `[ALTERA RN34]`, US-CAT-12 (RN35, RN37).
+**Origem**: `catalog-service_spec.md` — US-CAT-14, `[ALTERA RN34]`, US-CAT-12 (RN35, RN37).
 
 ## Extensões, correções e decisões cruzadas declaradas nesta spec
 
@@ -37,7 +37,7 @@ Como um Administrador do sistema, quero cadastrar e habilitar novos tipos de mí
 4. **Validação de formato de `code` adicionada** (FR-001a) — ausente na DDL/RN de origem.
 5. **Autorização de `/media-types` marcada como extensão**, não decisão já confirmada na matriz 15.4.
 6. **`STREAM` removido dos exemplos** — fora do escopo de `[ALTERA RN34]`, que define apenas `IMAGE`, `VIDEO`, `AUDIO`.
-7. **FR-001 reescrito** para deixar claro que o schema `media_type_catalog` é pré-existente (baseline de `microservice-catalog_spec.md`); o entregável novo desta feature é a API de gestão.
+7. **FR-001 reescrito** para deixar claro que o schema `media_type_catalog` é pré-existente (baseline de `catalog-service_spec.md`); o entregável novo desta feature é a API de gestão.
 8. **Estratégia de cache do catálogo de tipos declarada** (FR-008) — tabela de referência de baixa mutação, cache local em memória por instância, invalidado por evento interno de escrita.
 9. Métricas de latência movidas para Assumptions.
 10. Tabela de rastreabilidade adicionada.
@@ -109,7 +109,7 @@ Como um Consumidor do Catálogo, quero visualizar o tipo de mídia (`VIDEO` ou `
 
 ### Functional Requirements
 
-- **FR-001**: O sistema DEVE expor gestão administrativa sobre a tabela de domínio `media_type_catalog` (`catalog.media_type_catalog`) — schema pré-existente definido em `microservice-catalog_spec.md` (`[ALTERA RN34]`), com os campos `code`, `description` e `enabled`. O entregável desta feature é a API de gestão (FR-002), não a criação do schema.
+- **FR-001**: O sistema DEVE expor gestão administrativa sobre a tabela de domínio `media_type_catalog` (`catalog.media_type_catalog`) — schema pré-existente definido em `catalog-service_spec.md` (`[ALTERA RN34]`), com os campos `code`, `description` e `enabled`. O entregável desta feature é a API de gestão (FR-002), não a criação do schema.
 - **FR-001a**: O sistema DEVE validar que `code` siga o formato `^[A-Z_]{2,30}$` (maiúsculas e underscore, 2 a 30 caracteres), rejeitando com HTTP 400 valores fora desse padrão.
 - **FR-002**: O sistema DEVE fornecer endpoints REST administrativos protegidos com `ROLE_ADMIN` para listar, cadastrar e alterar o status (`enabled`) de tipos de mídia.
 - **FR-002a**: O sistema NÃO DEVE expor endpoint de exclusão (`DELETE`) para `media_type_catalog` — decisão intencional de design, para preservar integridade referencial de `MediaItem` já cadastrados com um `code` desativado. Desativação (`enabled = false`) é o único mecanismo de remoção operacional.
@@ -150,7 +150,7 @@ Como um Consumidor do Catálogo, quero visualizar o tipo de mídia (`VIDEO` ou `
 
 ## Assumptions
 
-- A funcionalidade é implementada no microsserviço `microservice-catalog` operando sobre as tabelas `catalog.media_type_catalog` (schema pré-existente) e `catalog.media_item` (gerida por US-CAT-12) no PostgreSQL (`catalog_db`).
+- A funcionalidade é implementada no microsserviço `catalog-service` operando sobre as tabelas `catalog.media_type_catalog` (schema pré-existente) e `catalog.media_item` (gerida por US-CAT-12) no PostgreSQL (`catalog_db`).
 - O banco de dados é inicializado por padrão **apenas** com o tipo `IMAGE` na carga DDL/Liquibase (herdado do legado, RN34 as-is). `VIDEO`/`AUDIO` não são pré-semeados — são inseridos via a API definida nesta feature, para preservar a demonstração de extensibilidade sem deploy (SC-001).
 - Autorização `ROLE_ADMIN` para os endpoints de `/media-types` é uma extensão proposta por esta spec sobre a matriz de autorização (`arquitetura-solucao.md` seção 15.4), que não lista esse recurso explicitamente — pendente de confirmação formal.
 - Exclusão de tipo de mídia está fora de escopo por decisão de design (FR-002a), não por omissão.
@@ -161,7 +161,7 @@ Como um Consumidor do Catálogo, quero visualizar o tipo de mídia (`VIDEO` ou `
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001 | `microservice-catalog_spec.md`, `[ALTERA RN34]` (DDL `media_type_catalog`) | Schema pré-existente; reescrito para não implicar criação nova |
+| FR-001 | `catalog-service_spec.md`, `[ALTERA RN34]` (DDL `media_type_catalog`) | Schema pré-existente; reescrito para não implicar criação nova |
 | FR-001a | Extensão local (não herdada) | Formato de `code` ausente na DDL/RN de origem |
 | FR-002, FR-002a | US-CAT-14 (nova) | API de gestão; exclusão fora de escopo por design |
 | FR-003, FR-004 | RN35, RN37 (via US-CAT-12) | Reaproveitado, não redefinido |
@@ -169,7 +169,7 @@ Como um Consumidor do Catálogo, quero visualizar o tipo de mídia (`VIDEO` ou `
 | FR-006 | `arquitetura-solucao.md` seção 8 | RFC 7807 |
 | FR-008 | Extensão local (não herdada) | Estratégia de cache não definida em seção 10 |
 | Seed apenas `IMAGE` | DDL de origem (`INSERT ... 'IMAGE' ... -- herdado do legado`) | Corrige contradição da versão anterior (seed de `VIDEO`) |
-| Referência cruzada com US-CAT-12 | `microservice-catalog_spec.md` US-CAT-12 (spec já refatorada) | Resolve contradição sobre dono da API de tipos |
+| Referência cruzada com US-CAT-12 | `catalog-service_spec.md` US-CAT-12 (spec já refatorada) | Resolve contradição sobre dono da API de tipos |
 
 ### User Story 2 - Cadastrar Mídia em Vídeo para Eventos (Priority: P2)
 
@@ -256,6 +256,6 @@ Como um Consumidor do Catálogo, quero visualizar o tipo de mídia (`VIDEO` ou `
 
 ## Assumptions
 
-- A funcionalidade é implementada no microsserviço `microservice-catalog` operando sobre as tabelas `catalog.media_type_catalog` e `catalog.media_item` no PostgreSQL (`catalog_db`).
+- A funcionalidade é implementada no microsserviço `catalog-service` operando sobre as tabelas `catalog.media_type_catalog` e `catalog.media_item` no PostgreSQL (`catalog_db`).
 - O banco de dados é inicializado por padrão com os tipos `IMAGE` e `VIDEO` na carga DDL via Liquibase.
 - Autenticação e autorização providas via Keycloak JWT com a role `ROLE_ADMIN`.

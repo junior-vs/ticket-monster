@@ -8,16 +8,16 @@
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: User story label (e.g., `[US1]`, `[US2]`, `[US3]`, `[US4]`)
-- File paths are relative to repository root (`microservice-catalog/...`)
+- File paths are relative to repository root (`catalog-service/...`)
 
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Initialize project structure and baseline configuration for `microservice-catalog`
+**Purpose**: Initialize project structure and baseline configuration for `catalog-service`
 
-- [ ] T001 Configure application properties for Quarkus OIDC, PostgreSQL, and Redis in `microservice-catalog/src/main/resources/application.properties`
-- [ ] T002 [P] Create package layout for Clean Architecture in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/`
+- [ ] T001 Configure application properties for Quarkus OIDC, PostgreSQL, and Redis in `catalog-service/src/main/resources/application.properties`
+- [ ] T002 [P] Create package layout for Clean Architecture in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/`
 
 ---
 
@@ -27,12 +27,12 @@
 
 **⚠️ CRITICAL**: No user story implementation can begin until this phase is complete
 
-- [ ] T003 Create Liquibase migration for `catalog.event_category` constraints (`UNIQUE` normalized + `btrim()` check) in `microservice-catalog/src/main/resources/db/migration/V1.0.1__event_category_description_constraints.sql` and include it in `db/changelog/db.changelog-master.xml`
-- [ ] T004 [P] Create domain model `EventCategory` with validation and normalization support in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/model/EventCategory.java` (with rules enforced by `EventCategoryDescription`)
-- [ ] T005 [P] Create domain exceptions (`EventCategoryAlreadyExistsException`, `EventCategoryNotFoundException`, `EventCategoryInUseException`) in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/exception/`
-- [ ] T006 [P] Create JPA entity `EventCategoryEntity` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/entity/EventCategoryEntity.java`
-- [ ] T007 Create Panache reactive repository adapter `EventCategoryRepository` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/repository/EventCategoryRepository.java`
-- [ ] T008 [P] Create Redis cache adapter `EventCategoryRedisCacheAdapter` for invalidation and retrieval under key `catalog:categories:list` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/cache/EventCategoryRedisCacheAdapter.java`
+- [ ] T003 Create Liquibase migration for `catalog.event_category` constraints (`UNIQUE` normalized + `btrim()` check) in `catalog-service/src/main/resources/db/migration/V1.0.1__event_category_description_constraints.sql` and include it in `db/changelog/db.changelog-master.xml`
+- [ ] T004 [P] Create domain model `EventCategory` with validation and normalization support in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/model/EventCategory.java` (with rules enforced by `EventCategoryDescription`)
+- [ ] T005 [P] Create domain exceptions (`EventCategoryAlreadyExistsException`, `EventCategoryNotFoundException`, `EventCategoryInUseException`) in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/exception/`
+- [ ] T006 [P] Create JPA entity `EventCategoryEntity` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/entity/EventCategoryEntity.java`
+- [ ] T007 Create Panache reactive repository adapter `EventCategoryRepository` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/repository/EventCategoryRepository.java`
+- [ ] T008 [P] Create Redis cache adapter `EventCategoryRedisCacheAdapter` for invalidation and retrieval under key `catalog:categories:list` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/cache/EventCategoryRedisCacheAdapter.java`
 - [ ] T009 Create RFC 7807 Problem Details exception mapper `EventCategoryExceptionMapper` in `../../src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/mapper`
 
 **Checkpoint**: Foundation ready — database schema, domain invariants, repository ports, and RFC 7807 error handler complete.
@@ -47,15 +47,15 @@
 
 ### Tests for User Story 1 (REQUIRED) ⚠️
 
-- [ ] T010 [P] [US1] Unit test for `EventCategory` validation and `trim()` normalization in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/unit/domain/EventCategoryTest.java`
-- [ ] T011 [P] [US1] Integration test for category creation, uniqueness check (RN06, FR-002a), and RFC 7807 error responses in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java`
+- [ ] T010 [P] [US1] Unit test for `EventCategory` validation and `trim()` normalization in `catalog-service/src/test/java/br/vsjr/labs/ticketmonster/catalog/unit/domain/EventCategoryTest.java`
+- [ ] T011 [P] [US1] Integration test for category creation, uniqueness check (RN06, FR-002a), and RFC 7807 error responses in `catalog-service/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java`
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create input DTO `CreateCategoryRequest` in `in` and use `CategoryResponse` as output DTO in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/dto/`
-- [ ] T013 [P] [US1] Create use case interface `CreateCategoryUseCase` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/CreateCategoryUseCase.java`
-- [ ] T014 [US1] Implement `CreateCategoryUseCase` logic with uniqueness check and cache eviction in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
-- [ ] T015 [US1] Implement POST endpoint `/api/v1/admin/event-categories` guarded with `@RolesAllowed("ROLE_ADMIN")` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
+- [ ] T012 [P] [US1] Create input DTO `CreateCategoryRequest` in `in` and use `CategoryResponse` as output DTO in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/dto/`
+- [ ] T013 [P] [US1] Create use case interface `CreateCategoryUseCase` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/CreateCategoryUseCase.java`
+- [ ] T014 [US1] Implement `CreateCategoryUseCase` logic with uniqueness check and cache eviction in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
+- [ ] T015 [US1] Implement POST endpoint `/api/v1/admin/event-categories` guarded with `@RolesAllowed("ROLE_ADMIN")` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
 
 **Checkpoint**: At this point, User Story 1 (MVP) is fully functional and testable independently.
 
@@ -69,14 +69,14 @@
 
 ### Tests for User Story 2 (REQUIRED) ⚠️
 
-- [ ] T016 [P] [US2] Contract and REST integration test for update category flow in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java`
+- [ ] T016 [P] [US2] Contract and REST integration test for update category flow in `catalog-service/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java`
 
 ### Implementation for User Story 2
 
 - [ ] T017 [P] [US2] Create input DTO `UpdateCategoryRequest` in `in`
-- [ ] T018 [P] [US2] Create use case interface `UpdateCategoryUseCase` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/UpdateCategoryUseCase.java`
-- [ ] T019 [US2] Implement `UpdateCategoryUseCase` logic with uniqueness validation and cache invalidation in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
-- [ ] T020 [US2] Implement PUT endpoint `/api/v1/admin/event-categories/{id}` guarded with `@RolesAllowed("ROLE_ADMIN")` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
+- [ ] T018 [P] [US2] Create use case interface `UpdateCategoryUseCase` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/UpdateCategoryUseCase.java`
+- [ ] T019 [US2] Implement `UpdateCategoryUseCase` logic with uniqueness validation and cache invalidation in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
+- [ ] T020 [US2] Implement PUT endpoint `/api/v1/admin/event-categories/{id}` guarded with `@RolesAllowed("ROLE_ADMIN")` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
 
 **Checkpoint**: User Stories 1 AND 2 are both functional and testable independently.
 
@@ -90,14 +90,14 @@
 
 ### Tests for User Story 3 (REQUIRED) ⚠️
 
-- [ ] T021 [P] [US3] Integration test for category deletion and `ON DELETE RESTRICT` constraint validation in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/integration/EventCategoryRepositoryTest.java`
-- [ ] T022 [P] [US3] REST integration tests for DELETE endpoint status codes (204, 404, 409, 401, 403) in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java` and `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceSecurityTest.java`
+- [ ] T021 [P] [US3] Integration test for category deletion and `ON DELETE RESTRICT` constraint validation in `catalog-service/src/test/java/br/vsjr/labs/ticketmonster/catalog/integration/EventCategoryRepositoryTest.java`
+- [ ] T022 [P] [US3] REST integration tests for DELETE endpoint status codes (204, 404, 409, 401, 403) in `catalog-service/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java` and `catalog-service/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceSecurityTest.java`
 
 ### Implementation for User Story 3
 
-- [ ] T023 [P] [US3] Create use case interface `DeleteCategoryUseCase` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/DeleteCategoryUseCase.java`
-- [ ] T024 [US3] Implement `DeleteCategoryUseCase` logic checking for associated events, throwing `EventCategoryInUseException`, and invalidating Redis cache in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
-- [ ] T025 [US3] Implement DELETE endpoint `/api/v1/admin/event-categories/{id}` guarded with `@RolesAllowed("ROLE_ADMIN")` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
+- [ ] T023 [P] [US3] Create use case interface `DeleteCategoryUseCase` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/DeleteCategoryUseCase.java`
+- [ ] T024 [US3] Implement `DeleteCategoryUseCase` logic checking for associated events, throwing `EventCategoryInUseException`, and invalidating Redis cache in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
+- [ ] T025 [US3] Implement DELETE endpoint `/api/v1/admin/event-categories/{id}` guarded with `@RolesAllowed("ROLE_ADMIN")` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
 
 **Checkpoint**: User Stories 1, 2, and 3 are all functional and testable independently.
 
@@ -111,13 +111,13 @@
 
 ### Tests for User Story 4 (REQUIRED) ⚠️
 
-- [ ] T026 [P] [US4] Contract and Redis cache-aside test for public GET endpoint in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceCacheTest.java`
+- [ ] T026 [P] [US4] Contract and Redis cache-aside test for public GET endpoint in `catalog-service/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceCacheTest.java`
 
 ### Implementation for User Story 4
 
-- [ ] T027 [P] [US4] Create use case interface `ListCategoriesUseCase` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/ListCategoriesUseCase.java`
-- [ ] T028 [US4] Implement `ListCategoriesUseCase` logic with Redis cache-aside lookup under key `catalog:categories:list` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
-- [ ] T029 [US4] Implement public GET endpoint `/api/v1/event-categories` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryResource.java`
+- [ ] T027 [P] [US4] Create use case interface `ListCategoriesUseCase` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/ListCategoriesUseCase.java`
+- [ ] T028 [US4] Implement `ListCategoriesUseCase` logic with Redis cache-aside lookup under key `catalog:categories:list` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
+- [ ] T029 [US4] Implement public GET endpoint `/api/v1/event-categories` in `catalog-service/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryResource.java`
 
 **Checkpoint**: All user stories (P1 through P4) are fully functional.
 
@@ -129,7 +129,7 @@
 
 - [ ] T030 [P] Verify OpenAPI 3.0 contract alignment against `specs/009-gerenciar-categorias-eventos/contracts/event-categories-api.yaml`
 - [ ] T031 Execute quickstart validation scenarios defined in `specs/009-gerenciar-categorias-eventos/quickstart.md`
-- [ ] T032 Run full Maven test suite (`./mvnw clean test`) and confirm 100% test pass rate in `microservice-catalog/`
+- [ ] T032 Run full Maven test suite (`./mvnw clean test`) and confirm 100% test pass rate in `catalog-service/`
 
 ---
 

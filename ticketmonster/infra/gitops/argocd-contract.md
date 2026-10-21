@@ -9,6 +9,6 @@ The shared infrastructure in this repository is currently expressed as Docker Co
 5. Keycloak realm import for `ticketmonster`.
 6. Kafka broker, Schema Registry, topics, ACLs, and DLQs.
 7. OpenTelemetry Collector, Prometheus, Loki, Tempo, and Grafana provisioning.
-8. Microservice workloads, starting with `microservice-catalog`.
+8. Microservice workloads, starting with `catalog-service`.
 
 ArgoCD applications should use sync waves matching that order so services are deployed only after their infrastructure and secrets are available.

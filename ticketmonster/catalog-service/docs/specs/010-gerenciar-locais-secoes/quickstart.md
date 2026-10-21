@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Docker running.
-- Java runtime compatible with `microservice-catalog/pom.xml`.
+- Java runtime compatible with `catalog-service/pom.xml`.
 - Maven wrapper or local Maven available for the module.
 - Optional admin JWT with `ROLE_ADMIN` for manual API checks.
 
@@ -15,7 +15,7 @@ From the repository root:
 docker compose -f docker-compose.shared.yml up -d
 ```
 
-From `microservice-catalog`:
+From `catalog-service`:
 
 ```powershell
 .\mvnw.cmd test
@@ -32,7 +32,7 @@ The service uses:
 
 ## Contract Validation
 
-The REST contract is `microservice-catalog/specs/010-gerenciar-locais-secoes/contracts/openapi.yaml`.
+The REST contract is `catalog-service/specs/010-gerenciar-locais-secoes/contracts/openapi.yaml`.
 
 Expected checks:
 
@@ -115,7 +115,7 @@ Expected:
 
 ## Automated Test Expectations
 
-Run from `microservice-catalog`:
+Run from `catalog-service`:
 
 ```powershell
 .\mvnw.cmd test

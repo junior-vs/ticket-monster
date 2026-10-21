@@ -3,7 +3,7 @@
 **Feature Branch**: `009-gerenciar-categorias-eventos`  
 **Created**: 2026-07-25  
 **Status**: Draft  
-**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: specs/microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: specs/catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -27,18 +27,18 @@ Como um Administrador do sistema, quero cadastrar uma nova categoria de evento (
 **Feature Branch**: `009-gerenciar-categorias-eventos`
 **Created**: 2026-07-25
 **Status**: Draft
-**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: specs/microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-09:** Gerenciar catálogo de categorias de eventos (Admin). respect: specs/catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog_spec.md` — US-CAT-09, RN06, item `[NOVO]` (proteção contra exclusão com Event associado).
+**Origem**: `catalog-service_spec.md` — US-CAT-09, RN06, item `[NOVO]` (proteção contra exclusão com Event associado).
 
 ## Extensões declaradas nesta spec (não decididas nos documentos-fonte)
 
-Os itens abaixo são necessários para US-CAT-09 mas não estão explicitamente resolvidos em `microservice-catalog_spec.md` ou `arquitetura-solucao.md`. São tratados aqui como decisões locais desta feature, sujeitas a confirmação:
+Os itens abaixo são necessários para US-CAT-09 mas não estão explicitamente resolvidos em `catalog-service_spec.md` ou `arquitetura-solucao.md`. São tratados aqui como decisões locais desta feature, sujeitas a confirmação:
 
 1. **Leitura pública de categorias**: a matriz de autorização (`arquitetura-solucao.md`, seção 15.4) lista `/event-categories` apenas na linha de escrita (`ROLE_ADMIN`); não há linha explícita de GET público para categorias, diferente de `/events`, `/venues`, `/shows`, `/performances`. Esta spec assume GET público como extensão natural da matriz (necessário para filtro de catálogo — US-CAT-02), mas isso deve ser confirmado e formalizado na seção 15.4 antes da implementação.
 2. **Normalização de unicidade (RN06)**: a DDL de origem define `UNIQUE (description)` como constraint simples, sensível a espaços e caixa. O requisito de tratar `"Rock "` e `"Rock"` como duplicatas (RN06) não é garantido por essa constraint sozinha. Esta spec declara a extensão de schema necessária (ver FR-002a).
 3. **Contrato de cache Redis**: `arquitetura-solucao.md` seção 10 não define chave de cache para listagem de categorias (só define `catalog:event:{id}` e `catalog:shows:performance:{id}`). Esta spec propõe a chave (ver FR-007).
-4. **"Categoria ativa" (RN04)**: `microservice-catalog_spec.md` RN04 menciona "categoria de evento **ativa**", mas a entidade `EventCategory` não possui coluna de status. Assumido nesta spec que não existe conceito de categoria inativa nesta versão — RN04 lida como "categoria existente" (ver Assumptions).
+4. **"Categoria ativa" (RN04)**: `catalog-service_spec.md` RN04 menciona "categoria de evento **ativa**", mas a entidade `EventCategory` não possui coluna de status. Assumido nesta spec que não existe conceito de categoria inativa nesta versão — RN04 lida como "categoria existente" (ver Assumptions).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -157,7 +157,7 @@ Como um Administrador ou Consumidor do Catálogo, quero listar todas as categori
 
 ## Assumptions
 
-- O gerenciamento de categorias é executado no microsserviço `microservice-catalog` sobre o schema `catalog.event_category` no PostgreSQL.
+- O gerenciamento de categorias é executado no microsserviço `catalog-service` sobre o schema `catalog.event_category` no PostgreSQL.
 - O cache de categorias é mantido em Redis para otimizar as consultas de filtros públicos de catálogo, sob a chave proposta em FR-007 (contrato novo, não herdado da arquitetura de referência).
 - Autenticação e autorização via Keycloak com role `ROLE_ADMIN` para escrita; leitura pública assumida como extensão da matriz de autorização (seção 15.4), pendente de confirmação formal (ver "Extensões declaradas nesta spec", item 1).
 - RN04 ("categoria ativa") é interpretada, nesta versão, como "categoria existente" — não há coluna de status/enabled em `EventCategory`. Se um conceito de categoria inativa for necessário no futuro, requer extensão de schema fora do escopo desta feature.
@@ -168,14 +168,14 @@ Como um Administrador ou Consumidor do Catálogo, quero listar todas as categori
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001, FR-004 | `microservice-catalog_spec.md` US-CAT-09; item `[NOVO]` (proteção contra exclusão) | CRUD + `ON DELETE RESTRICT` |
+| FR-001, FR-004 | `catalog-service_spec.md` US-CAT-09; item `[NOVO]` (proteção contra exclusão) | CRUD + `ON DELETE RESTRICT` |
 | FR-002 | RN06 | Unicidade e não-nulidade |
 | FR-002a | Extensão local (não herdada) | Necessária para RN06 valer sob espaços/whitespace, ausente na DDL original |
 | FR-003 | DDL `catalog.event_category.description VARCHAR(120)` | — |
 | FR-005 | `arquitetura-solucao.md` seção 8 (Padrão de Erro RFC 7807) | — |
 | FR-007, FR-007a | Extensão local (não herdada) | Chave de cache não definida em `arquitetura-solucao.md` seção 10 |
 | GET público (US4) | Extensão local | Matriz de autorização (15.4) não lista GET de `/event-categories` explicitamente |
-| RN04 "ativa" | `microservice-catalog_spec.md` RN04 | Termo não modelado na entidade; assumido como "existente" |
+| RN04 "ativa" | `catalog-service_spec.md` RN04 | Termo não modelado na entidade; assumido como "existente" |
 ### User Story 2 - Alterar Descrição de Categoria Existente (Priority: P2)
 
 Como um Administrador do sistema, quero atualizar a descrição de uma categoria de evento existente, para corrigir erros de digitação ou padronizar a nomenclatura das categorias.
@@ -269,6 +269,6 @@ Como um Administrador ou Consumidor do Catálogo, quero listar todas as categori
 
 ## Assumptions
 
-- O gerenciamento de categorias é executado no microsserviço `microservice-catalog` sobre o schema `catalog.event_category` no PostgreSQL.
+- O gerenciamento de categorias é executado no microsserviço `catalog-service` sobre o schema `catalog.event_category` no PostgreSQL.
 - O cache de categorias é mantido em Redis para otimizar as consultas de filtros públicos de catálogo.
 - Autenticação e autorização via Keycloak com role `ROLE_ADMIN`.

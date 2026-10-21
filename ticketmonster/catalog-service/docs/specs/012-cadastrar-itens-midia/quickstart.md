@@ -3,7 +3,7 @@
 ## Pré-requisitos
 
 - Docker em execução (para Testcontainers e/ou docker-compose).
-- Java runtime compatível com `microservice-catalog/pom.xml` (Java 25 release).
+- Java runtime compatível com `catalog-service/pom.xml` (Java 25 release).
 - Maven wrapper ou Maven local disponível no módulo.
 - JWT admin com role `ROLE_ADMIN` para testes manuais das rotas POST/DELETE.
 - (Opcional) Token público sem role para testar rotas GET /media-items.
@@ -16,7 +16,7 @@ A partir da raiz do repositório:
 docker compose -f docker-compose.shared.yml up -d
 ```
 
-A partir de `microservice-catalog`:
+A partir de `catalog-service`:
 
 ```powershell
 .\mvnw.cmd test
@@ -41,7 +41,7 @@ O serviço utiliza:
 
 ## Validação de Contrato
 
-O contrato REST está em `microservice-catalog/specs/012-cadastrar-itens-midia/contracts/openapi.yaml`.
+O contrato REST está em `catalog-service/specs/012-cadastrar-itens-midia/contracts/openapi.yaml`.
 
 Checagens esperadas:
 
@@ -196,7 +196,7 @@ Invoke-WebRequest -Method Delete -Uri "http://localhost:8080/api/v1/admin/media-
 
 ## Testes Automatizados Esperados
 
-Executar de `microservice-catalog`:
+Executar de `catalog-service`:
 
 ```powershell
 .\mvnw.cmd test

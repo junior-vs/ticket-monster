@@ -1,6 +1,6 @@
 # Tasks: Cadastrar Itens de Mídia com Validação e Fallback (Admin)
 
-**Input**: Design documents from `microservice-catalog/specs/012-cadastrar-itens-midia/`
+**Input**: Design documents from `catalog-service/specs/012-cadastrar-itens-midia/`
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/openapi.yaml, quickstart.md
 
@@ -16,10 +16,10 @@
 
 ## Path Conventions
 
-- Project root: `microservice-catalog/` (Maven module)
+- Project root: `catalog-service/` (Maven module)
 - Sources: `../../src/main/java/br/vsjr/labs/ticketmonster/catalog/media/`
-- Tests: `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/`
-- Resources: `microservice-catalog/src/main/resources/application.properties`; `db/migration/V1__init.sql` já contém DDL de `media_type_catalog`, `media_item` e FK `event.media_item_id ... ON DELETE SET NULL` — NÃO criar nova migração.
+- Tests: `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/`
+- Resources: `catalog-service/src/main/resources/application.properties`; `db/migration/V1__init.sql` já contém DDL de `media_type_catalog`, `media_item` e FK `event.media_item_id ... ON DELETE SET NULL` — NÃO criar nova migração.
 
 ---
 
@@ -28,8 +28,8 @@
 **Purpose**: Pacotes e properties de configuração do agregado MediaItem/MediaTypeCatalog. O projeto Quarkus já existe; Nenhuma nova migração é necessária.
 
 - [ ] T001 Criar estrutura de pacotes do agregado `catalog.media.*` (domain, application, adapter/in/rest/dto, adapter/in/rest/exception, adapter/out/persistence/entity, adapter/out/cache, adapter/out/urlcheck) em `../../src/main/java/br/vsjr/labs/ticketmonster/catalog/media/`
-- [ ] T002 [P] Criar estrutura de pacotes de testes do agregado `catalog.media.*` (domain/, application/, adapter/in/rest/, adapter/out/persistence/, adapter/out/cache/, adapter/out/urlcheck/) em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/`
-- [ ] T003 [P] Adicionar propriedades de configuração do MediaItem em `microservice-catalog/src/main/resources/application.properties`:
+- [ ] T002 [P] Criar estrutura de pacotes de testes do agregado `catalog.media.*` (domain/, application/, adapter/in/rest/, adapter/out/persistence/, adapter/out/cache/, adapter/out/urlcheck/) em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/`
+- [ ] T003 [P] Adicionar propriedades de configuração do MediaItem em `catalog-service/src/main/resources/application.properties`:
   - `catalog.media.url-check.timeout-ms=250` (timeout check remoto URL reativo)
   - `catalog.media.fallback-file=not_available.jpg` (chave lógica de fallback padrão)
   - `catalog.media.cache.ttl-seconds=3600` (TTL cache Redis individual)
@@ -80,14 +80,14 @@
 
 > **NOTE: Escrever testes PRIMEIRO, garantir que FALHEM antes da implementação.**
 
-- [ ] T018 [P] [US1] Teste unitário de domínio: `UrlValidator.isValidScheme` aceita `http://example.com`, `https://example.com:8443/x?y`; rejeita `ftp://x`, `httpx://x`, `http`, vazio, null — em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/UrlValidatorTest.java`
-- [ ] T019 [P] [US1] Teste unitário de domínio: `MediaItemFactory.createNew` quando `remoteAccessible=false` → `fallbackApplied=true`, `cachedFileName=fallbackFileName`; quando `remoteAccessible=true` → `fallbackApplied=false`, `cachedFileName=null` (ou opcional vazio) — em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/MediaItemFactoryFallbackTest.java`
-- [ ] T020 [P] [US1] Teste unitário de domínio/invariante: `MediaItem` rejeita `mediaTypeCode` nulo/branco e `url` nulo/branco (lança exceção de domínio) — em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/MediaItemInvariantsTest.java`
-- [ ] T021 [P] [US1] Teste de contrato REST `MediaItemAdminResourceContractTest`: (a) POST admin `/api/v1/admin/media-items` com URL acessível (mock RemoteUrlValidatorPort via `@InjectMock` retornando `Uni.createFrom().item(true)`) → 201 e `fallbackApplied=false`; (b) mesmo payload novamente → 409 `title="URL já cadastrada"`; (c) URL `ftp://` → 400 `title="Esquema de URL inválido"`; (d) sem token → 401; (e) token sem ROLE_ADMIN → 403. Usar `@QuarkusTest`, REST Assured, validar Problem RFC 7807 headers `application/problem+json` — em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/MediaItemAdminResourceContractTest.java`
-- [ ] T022 [P] [US1] Teste unitário adapter `VertxRemoteUrlValidator` com mock Vert.x WebClient: (1) 200 OK → true; (2) 404 → false; (3) 500 → false; (4) timeout após 250ms → false; (5) ConnectException/network error → false. O adapter NUNCA deve lançar exceção p/ rede. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/urlcheck/VertxRemoteUrlValidatorUnitTest.java`
-- [ ] T023 [P] [US1] Teste integração Testcontainers PostgreSQL: constraint `ck_media_item_url_scheme` (CHECK `url ~* '^https?://'`) é lastro de banco — inserir URL `ftp://` bypassando validador de domínio (via Panache native query direto) deve disparar erro de constraint. Constraint `uq_media_item_url`: duas threads criando mesma URL concorrentemente → 409 na segunda. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/persistence/MediaItemConstraintsIT.java`
-- [ ] T024 [P] [US1] Teste integração Testcontainers Redis: cache-aside `catalog:media-item:{id}` — primeiro GET público miss → banco → cache set → segundo GET público vem do cache (validar ttl ou count de chamadas repo com mockito spy). Após delete → cache evicted. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/cache/RedisMediaItemCacheIT.java`
-- [ ] T025 [P] [US1] Teste E2E P1 (obrigatório Constituição III): Quarkus + Postgres + Redis via Testcontainers + WireMock (Quarkus WireMock support ou `@TestResource` WireMockServer standalone). 3 cenários WireMock: (a) rota `/ok.jpg` 200 → POST retorna 201 `fallbackApplied=false`; (b) rota `/slow.jpg` `withFixedDelay(2000)` → timeout 250ms → 201 `fallbackApplied=true, cachedFileName="not_available.jpg"`; (c) rota `/notfound.jpg` 404 → 201 `fallbackApplied=true`. Validar response body completo e RFC 7807 para erros de validação. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/MediaItemE2EP1Test.java`
+- [ ] T018 [P] [US1] Teste unitário de domínio: `UrlValidator.isValidScheme` aceita `http://example.com`, `https://example.com:8443/x?y`; rejeita `ftp://x`, `httpx://x`, `http`, vazio, null — em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/UrlValidatorTest.java`
+- [ ] T019 [P] [US1] Teste unitário de domínio: `MediaItemFactory.createNew` quando `remoteAccessible=false` → `fallbackApplied=true`, `cachedFileName=fallbackFileName`; quando `remoteAccessible=true` → `fallbackApplied=false`, `cachedFileName=null` (ou opcional vazio) — em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/MediaItemFactoryFallbackTest.java`
+- [ ] T020 [P] [US1] Teste unitário de domínio/invariante: `MediaItem` rejeita `mediaTypeCode` nulo/branco e `url` nulo/branco (lança exceção de domínio) — em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/MediaItemInvariantsTest.java`
+- [ ] T021 [P] [US1] Teste de contrato REST `MediaItemAdminResourceContractTest`: (a) POST admin `/api/v1/admin/media-items` com URL acessível (mock RemoteUrlValidatorPort via `@InjectMock` retornando `Uni.createFrom().item(true)`) → 201 e `fallbackApplied=false`; (b) mesmo payload novamente → 409 `title="URL já cadastrada"`; (c) URL `ftp://` → 400 `title="Esquema de URL inválido"`; (d) sem token → 401; (e) token sem ROLE_ADMIN → 403. Usar `@QuarkusTest`, REST Assured, validar Problem RFC 7807 headers `application/problem+json` — em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/MediaItemAdminResourceContractTest.java`
+- [ ] T022 [P] [US1] Teste unitário adapter `VertxRemoteUrlValidator` com mock Vert.x WebClient: (1) 200 OK → true; (2) 404 → false; (3) 500 → false; (4) timeout após 250ms → false; (5) ConnectException/network error → false. O adapter NUNCA deve lançar exceção p/ rede. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/urlcheck/VertxRemoteUrlValidatorUnitTest.java`
+- [ ] T023 [P] [US1] Teste integração Testcontainers PostgreSQL: constraint `ck_media_item_url_scheme` (CHECK `url ~* '^https?://'`) é lastro de banco — inserir URL `ftp://` bypassando validador de domínio (via Panache native query direto) deve disparar erro de constraint. Constraint `uq_media_item_url`: duas threads criando mesma URL concorrentemente → 409 na segunda. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/persistence/MediaItemConstraintsIT.java`
+- [ ] T024 [P] [US1] Teste integração Testcontainers Redis: cache-aside `catalog:media-item:{id}` — primeiro GET público miss → banco → cache set → segundo GET público vem do cache (validar ttl ou count de chamadas repo com mockito spy). Após delete → cache evicted. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/cache/RedisMediaItemCacheIT.java`
+- [ ] T025 [P] [US1] Teste E2E P1 (obrigatório Constituição III): Quarkus + Postgres + Redis via Testcontainers + WireMock (Quarkus WireMock support ou `@TestResource` WireMockServer standalone). 3 cenários WireMock: (a) rota `/ok.jpg` 200 → POST retorna 201 `fallbackApplied=false`; (b) rota `/slow.jpg` `withFixedDelay(2000)` → timeout 250ms → 201 `fallbackApplied=true, cachedFileName="not_available.jpg"`; (c) rota `/notfound.jpg` 404 → 201 `fallbackApplied=true`. Validar response body completo e RFC 7807 para erros de validação. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/MediaItemE2EP1Test.java`
 
 ### Implementation for User Story 1
 
@@ -141,8 +141,8 @@
 
 ### Tests for User Story 2 (REQUIRED)
 
-- [ ] T033 [P] [US2] Teste contrato REST extensibilidade: inserir `VIDEO` via Panache `@TestTransaction` (Testcontainers Postgres); POST MediaItem com `mediaTypeCode=VIDEO` → 201; POST `DOCX` → 400; desabilitar `IMAGE` e tentar POST IMAGE → 400. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/MediaTypeExtensibilityContractTest.java`
-- [ ] T034 [P] [US2] Teste unitário `PanacheMediaTypeCatalogReader`: consulta retorna Optional vazio quando `enabled=false` ou código inexistente; Optional presente quando enabled. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/persistence/MediaTypeCatalogReaderTest.java`
+- [ ] T033 [P] [US2] Teste contrato REST extensibilidade: inserir `VIDEO` via Panache `@TestTransaction` (Testcontainers Postgres); POST MediaItem com `mediaTypeCode=VIDEO` → 201; POST `DOCX` → 400; desabilitar `IMAGE` e tentar POST IMAGE → 400. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/MediaTypeExtensibilityContractTest.java`
+- [ ] T034 [P] [US2] Teste unitário `PanacheMediaTypeCatalogReader`: consulta retorna Optional vazio quando `enabled=false` ou código inexistente; Optional presente quando enabled. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/persistence/MediaTypeCatalogReaderTest.java`
 
 ### Implementation for User Story 2
 
@@ -168,8 +168,8 @@
 
 ### Tests for User Story 3 (REQUIRED)
 
-- [ ] T037 [P] [US3] Teste contrato REST DELETE: (a) MediaItem existente → 204; (b) inexistente → 404; (c) vinculado a Event → 204 (NÃO 409); validar event.media_item_id virou NULL via SQL nativo pós-delete. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/MediaItemDeleteContractTest.java`
-- [ ] T038 [P] [US3] Teste integração Testcontainers PostgreSQL: DELETE MediaItem vinculado a Event → `ON DELETE SET NULL` executado; zero exceptions de FK. Validar que o Postgres, não a aplicação, cuidou da desvinculação automática (nenhum UPDATE manual). Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/persistence/MediaItemDeleteOnDeleteSetNullIT.java`
+- [ ] T037 [P] [US3] Teste contrato REST DELETE: (a) MediaItem existente → 204; (b) inexistente → 404; (c) vinculado a Event → 204 (NÃO 409); validar event.media_item_id virou NULL via SQL nativo pós-delete. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/MediaItemDeleteContractTest.java`
+- [ ] T038 [P] [US3] Teste integração Testcontainers PostgreSQL: DELETE MediaItem vinculado a Event → `ON DELETE SET NULL` executado; zero exceptions de FK. Validar que o Postgres, não a aplicação, cuidou da desvinculação automática (nenhum UPDATE manual). Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/out/persistence/MediaItemDeleteOnDeleteSetNullIT.java`
 
 ### Implementation for User Story 3
 
@@ -186,12 +186,12 @@
 
 **Purpose**: Cobertura final, compatibilidade de contrato OpenAPI, UX consistency, smoke local, execução do quickstart.md.
 
-- [ ] T041 [P] Unittest edge cases adicionais (se não cobertos): URL com 2049 caracteres → 400; query string `?x=1&y=2` aceita; URL com IP e porta `http://127.0.0.1:8080/x.jpg` aceita; fragmento `#section` removido ou aceito. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/UrlValidatorEdgeTest.java`
-- [ ] T042 [P] Contract compatibility validation: validar que endpoints e schemas em `contracts/openapi.yaml` batem com código real. Mínimo: `CreateMediaItemRequest` NÃO contém `fallbackApplied`/`cachedFileName` (usar `@ServerTest` ou gerar snapshot de schema Jackson via `ObjectMapper` e comparar com `contracts/openapi.yaml` JSON schema). Ou pelo menos validação manual de que `/admin/media-items` POST/DELETE/GET existe e `/media-items` público GET existe. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/OpenApiContractCompatibilityTest.java`
-- [ ] T043 [P] UX consistency: Validação em testes de que TODOS erros retornam `application/problem+json` com campos RFC 7807 obrigatórios (`type`, `title`, `status`, `detail`, `instance`); paginação base 0; 401/403 corretos; UUIDs em todos IDs; response sempre com `fallbackApplied` e `cachedFileName` transparente. Em `microservice-catalog/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/UxConsistencyTest.java`
+- [ ] T041 [P] Unittest edge cases adicionais (se não cobertos): URL com 2049 caracteres → 400; query string `?x=1&y=2` aceita; URL com IP e porta `http://127.0.0.1:8080/x.jpg` aceita; fragmento `#section` removido ou aceito. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/domain/UrlValidatorEdgeTest.java`
+- [ ] T042 [P] Contract compatibility validation: validar que endpoints e schemas em `contracts/openapi.yaml` batem com código real. Mínimo: `CreateMediaItemRequest` NÃO contém `fallbackApplied`/`cachedFileName` (usar `@ServerTest` ou gerar snapshot de schema Jackson via `ObjectMapper` e comparar com `contracts/openapi.yaml` JSON schema). Ou pelo menos validação manual de que `/admin/media-items` POST/DELETE/GET existe e `/media-items` público GET existe. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/OpenApiContractCompatibilityTest.java`
+- [ ] T043 [P] UX consistency: Validação em testes de que TODOS erros retornam `application/problem+json` com campos RFC 7807 obrigatórios (`type`, `title`, `status`, `detail`, `instance`); paginação base 0; 401/403 corretos; UUIDs em todos IDs; response sempre com `fallbackApplied` e `cachedFileName` transparente. Em `catalog-service/src/test/java/br/vsjr/labs/ticketmoster/catalog/media/adapter/in/rest/UxConsistencyTest.java`
 - [ ] T044 [P] Métricas e observabilidade: (1) adicionar `@Timed(name = "media_item_url_check_duration")` ou `@Counted(name = "media_item_url_check_failures")` no adapter `VertxRemoteUrlValidator`; ou usar Micrometer diretamente. (2) validar `/q/metrics` expõe contadores após chamadas de check. Em `../../src/main/java/br/vsjr/labs/ticketmonster/catalog/media/adapter/out/urlcheck/VertxRemoteUrlValidator.java` e testes associados. Health `/q/health/live` e `/q/health/ready` por padrão Quarkus; se necessário adicionar readiness custom para Redis/Postgres (fora de escopo se já existir healthcheck padrão).
-- [ ] T045 Smoke local: Executar `docker compose -f docker-compose.shared.yml up -d` + `.\mvnw.cmd quarkus:dev` em microservice-catalog. Validar 5 cenários de quickstart.md manualmente ou com scripts PowerShell: (Cenário 1) sucesso URL acessível 201; (Cenário 2a) 404 notfound fallback true 201; (Cenário 2b) timeout 2s fallback true 201; (Cenário 3a) ftp:// → 400; (Cenário 3b) DOCX → 400; (Cenário 4) DELETE sem vínculo → 204; DELETE com vínculo → 204 + event.media_item_id = NULL; (Cenário 5) Cache Redis miss → banco → chave existe; delete → chave removida.
-- [ ] T046 [P] Rodar bateria completa de testes: `.\mvnw.cmd -pl microservice-catalog test` (ou `.\mvnw.cmd -pl microservice-catalog failsafe:integration-test` se ITs separados por sufixo `*IT.java`). Garantir que todos os testes de T018–T044 passam. Após: **STOP — validar resultado antes de merge**.
+- [ ] T045 Smoke local: Executar `docker compose -f docker-compose.shared.yml up -d` + `.\mvnw.cmd quarkus:dev` em catalog-service. Validar 5 cenários de quickstart.md manualmente ou com scripts PowerShell: (Cenário 1) sucesso URL acessível 201; (Cenário 2a) 404 notfound fallback true 201; (Cenário 2b) timeout 2s fallback true 201; (Cenário 3a) ftp:// → 400; (Cenário 3b) DOCX → 400; (Cenário 4) DELETE sem vínculo → 204; DELETE com vínculo → 204 + event.media_item_id = NULL; (Cenário 5) Cache Redis miss → banco → chave existe; delete → chave removida.
+- [ ] T046 [P] Rodar bateria completa de testes: `.\mvnw.cmd -pl catalog-service test` (ou `.\mvnw.cmd -pl catalog-service failsafe:integration-test` se ITs separados por sufixo `*IT.java`). Garantir que todos os testes de T018–T044 passam. Após: **STOP — validar resultado antes de merge**.
 
 ---
 

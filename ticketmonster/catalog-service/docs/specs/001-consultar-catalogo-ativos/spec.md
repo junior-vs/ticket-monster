@@ -8,7 +8,7 @@
 
 **Input**: User description: "US-CAT-01: Consultar catalogo de eventos ativos. Respect e:\\develop\\repos\\java-projects\\ticket-monster\\docs\\arch\\arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog_spec.md` — US-CAT-01, RN01, RN04, item `[NOVO]` de ciclo de vida (`arquitetura-solucao.md`, seção 4 / modelo de dados do Catalog).
+**Origem**: `catalog-service_spec.md` — US-CAT-01, RN01, RN04, item `[NOVO]` de ciclo de vida (`arquitetura-solucao.md`, seção 4 / modelo de dados do Catalog).
 
 > **Nota de terminologia:** este documento usa "evento publicado" em vez de "evento ativo". O termo "ativo" é reaproveitado com semântica diferente em `microservice-telemetry_spec.md` (RN31/RN32 — show com performance futura). Para evitar ambiguidade entre Bounded Contexts, esta feature evita o termo "ativo" fora de citação literal da US original.
 
@@ -120,7 +120,7 @@ Como visitante, quero visualizar informações padronizadas de cada evento publi
 - **FR-019**: O sistema MUST retornar 200 com lista vazia e metadados de paginação quando não houver eventos publicados para os critérios consultados.
 - **FR-020**: O sistema MUST garantir, na transição de um evento para `status = PUBLISHED`, o preenchimento de `published_at` com o instante da transição — pré-condição necessária para a ordenação determinística de FR-017. Regra de aplicação (`PublishEventUseCase`), não de schema.
 
-> **Removido desta feature:** o requisito de "definir contratos de leitura e critérios de compatibilidade antes de alterar formato de resposta" (política de versionamento de API) não é comportamento desta US, não possui cenário de aceite correspondente e não é medido por nenhum Success Criteria aqui. Deve ser tratado como constraint/NFR de governança do `microservice-catalog`, não como FR desta feature.
+> **Removido desta feature:** o requisito de "definir contratos de leitura e critérios de compatibilidade antes de alterar formato de resposta" (política de versionamento de API) não é comportamento desta US, não possui cenário de aceite correspondente e não é medido por nenhum Success Criteria aqui. Deve ser tratado como constraint/NFR de governança do `catalog-service`, não como FR desta feature.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -156,10 +156,10 @@ Como visitante, quero visualizar informações padronizadas de cada evento publi
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001 a FR-003 | `microservice-catalog_spec.md` US-CAT-01; `arquitetura-solucao.md` item `[NOVO]` ciclo de vida do evento | Critério de "publicado" substitui a definição original ambígua de "ativo" |
-| FR-004, FR-005, FR-005a | `microservice-catalog_spec.md` US-CAT-02 | Filtro por categoria |
+| FR-001 a FR-003 | `catalog-service_spec.md` US-CAT-01; `arquitetura-solucao.md` item `[NOVO]` ciclo de vida do evento | Critério de "publicado" substitui a definição original ambígua de "ativo" |
+| FR-004, FR-005, FR-005a | `catalog-service_spec.md` US-CAT-02 | Filtro por categoria |
 | FR-007 a FR-009, FR-015, FR-016 | `arquitetura-solucao.md` seção 25.3 (correção de RN42 as-is) | Paginação `page`/`size` base 0 |
-| FR-017, FR-020 | Novo (não coberto explicitamente em `microservice-catalog_spec.md`) | Necessário para suportar ordenação determinística |
+| FR-017, FR-020 | Novo (não coberto explicitamente em `catalog-service_spec.md`) | Necessário para suportar ordenação determinística |
 | FR-018 | `arquitetura-solucao.md` seção 15.4 — matriz de autorização (`catalog GET /events` público) | — |
-| RN35 (mídia fallback) | `projeto-legado.md` RN35; `microservice-catalog_spec.md` CA-CAT-03-MED | Reaproveitada sem alteração |
+| RN35 (mídia fallback) | `projeto-legado.md` RN35; `catalog-service_spec.md` CA-CAT-03-MED | Reaproveitada sem alteração |
 | PR-001 | `arquitetura-solucao.md` seção 10 (Redis Cache-Aside) | Meta condicionada à premissa de cache |

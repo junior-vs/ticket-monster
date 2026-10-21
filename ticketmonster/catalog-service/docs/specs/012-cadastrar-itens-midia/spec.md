@@ -3,9 +3,9 @@
 **Feature Branch**: `012-cadastrar-itens-midia`
 **Created**: 2026-07-25
 **Status**: Draft
-**Input**: User description: "* **US-CAT-12:** Cadastrar novos itens de mídia com validação síncrona de URL (Admin). respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-12:** Cadastrar novos itens de mídia com validação síncrona de URL (Admin). respect: docs\\spec\\catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
-**Origem**: `microservice-catalog_spec.md` — US-CAT-12, RN34, RN35, RN37, CA-CAT-03-MED; `[ALTERA RN34]` / US-CAT-14 (catálogo extensível de tipos).
+**Origem**: `catalog-service_spec.md` — US-CAT-12, RN34, RN35, RN37, CA-CAT-03-MED; `[ALTERA RN34]` / US-CAT-14 (catálogo extensível de tipos).
 
 ## Extensões e correções declaradas nesta spec
 
@@ -126,7 +126,7 @@ Como um Administrador do sistema, quero listar itens de mídia cadastrados e rem
 
 ## Assumptions
 
-- O cadastro e validação de mídias é executado no microsserviço `microservice-catalog` utilizando o schema `catalog.media_item` e `catalog.media_type_catalog` no PostgreSQL (`catalog_db`).
+- O cadastro e validação de mídias é executado no microsserviço `catalog-service` utilizando o schema `catalog.media_item` e `catalog.media_type_catalog` no PostgreSQL (`catalog_db`).
 - O timeout de 250 ms para verificação síncrona da URL remota e a meta de P95 <= 300 ms para operações de escrita são propostos por esta spec, não confirmados em `arquitetura-solucao.md` — sujeitos a validação em teste de carga antes de virarem SLO.
 - O arquivo de fallback padrão (`not_available.jpg`) é um asset estático servido pelo próprio serviço ou por um bucket de object storage dedicado — a resolução definitiva do backend de armazenamento (substituto do `tmpDir` do legado, conforme `arquitetura-solucao.md` seção 16) é tratada como decisão de infraestrutura fora do escopo funcional desta feature.
 - Inclusão de novos `media_type_code` no catálogo de tipos é operação de migração de banco/deploy, não uma capacidade self-service exposta por API nesta feature.
@@ -137,7 +137,7 @@ Como um Administrador do sistema, quero listar itens de mídia cadastrados e rem
 
 | Item desta spec | Origem | Observação |
 |---|---|---|
-| FR-001, FR-002 | `microservice-catalog_spec.md` US-CAT-12, RN37 | CRUD + unicidade/esquema de URL |
+| FR-001, FR-002 | `catalog-service_spec.md` US-CAT-12, RN37 | CRUD + unicidade/esquema de URL |
 | FR-003 | RN35, CA-CAT-03-MED | Corrigido para explicitar não-bloqueio de thread (ver `arquitetura-solucao.md`, Diagnóstico item 4) |
 | FR-004 | `[ALTERA RN34]`, US-CAT-14 | Catálogo extensível; escopo de API restrito ao consumo |
 | FR-005 | `arquitetura-solucao.md` seção 8 | RFC 7807 |

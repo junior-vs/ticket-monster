@@ -3,7 +3,7 @@
 **Feature Branch**: `013-ciclo-vida-evento-rascunho-publicacao`  
 **Created**: 2026-07-25  
 **Status**: Draft  
-**Input**: User description: "* **US-CAT-13 (nova):** Como administrador, quero cadastrar um evento em rascunho e publicá-lo apenas quando estiver pronto, para evitar exibir eventos incompletos no catálogo público. respect: docs\\spec\\microservice-catalog.spec.md, docs\\arch\\arquitetura-solucao.md"
+**Input**: User description: "* **US-CAT-13 (nova):** Como administrador, quero cadastrar um evento em rascunho e publicá-lo apenas quando estiver pronto, para evitar exibir eventos incompletos no catálogo público. respect: docs\\spec\\catalog-service.spec.md, docs\\arch\\arquitetura-solucao.md"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -123,6 +123,6 @@ Como um Administrador do sistema, quero listar e filtrar eventos por seu status 
 
 ## Assumptions
 
-- A funcionalidade é construída no microsserviço `microservice-catalog` ajustando a entidade `Event` no PostgreSQL (`catalog_db`) e adicionando a validação em `PublishEventUseCase`.
+- A funcionalidade é construída no microsserviço `catalog-service` ajustando a entidade `Event` no PostgreSQL (`catalog_db`) e adicionando a validação em `PublishEventUseCase`.
 - A API pública de consulta de catálogo consome unicamente os dados filtrados por `status = 'PUBLISHED'`, mantendo CQRS leve e cache em Redis.
 - Autenticação e autorização via Keycloak JWT exigindo a role `ROLE_ADMIN`.

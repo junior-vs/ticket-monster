@@ -17,7 +17,7 @@ microservices. 4 target services, each with its own database (Database per Servi
 
 | Service | Directory | Database | Spec |
 |---|---|---|---|
-| `microservice-catalog` | `microservice-catalog/` | `catalog_db` | `docs/spec/microservice-catalog.spec.md`* |
+| `catalog-service` | `catalog-service/` | `catalog_db` | `docs/spec/catalog-service.spec.md`* |
 | `microservice-inventory` | `microservice-inventory/` | `inventory_db` + Redis | `docs/spec/microservice-inventory.spec.md` |
 | `microservice-booking` | `microservice-booking/` | `booking_db` | `docs/spec/microservice-bookin.spec.md` |
 | `microservice-telemetry` | `microservice-telemetry/` | `telemetry_db` (Timescale) + Redis | `docs/spec/microservice-telemetry.spec.md` |
@@ -41,7 +41,7 @@ one in the code: Java 25.
 
 ## 2. Mandatory tech stack
 
-- **Java 25**, as configured in `microservice-catalog/pom.xml` (`maven.compiler.release=25`) — use
+- **Java 25**, as configured in `catalog-service/pom.xml` (`maven.compiler.release=25`) — use
   this value in all new modules. *(Diverges from `arquitetura-solucao.md` ADR 01 text, which cites
   Java 21; report to the team to update the ADR and reflect the actual decision in the code.)*
 - **Quarkus 3.27+** (current pom uses `3.37.4` — compatible, keep pinned via BOM).
@@ -113,7 +113,7 @@ An explicit project rule — not optional:
 3. **Result/Either instead of exceptions for expected business flow** (not for infrastructure
    errors). The booking creation pipeline is modeled as a composition of pure transformations.
    - If Vavr (`Either<Error, T>`) is adopted, add the dependency explicitly to the module's
-     `pom.xml` — it is **not currently present** in `microservice-catalog/pom.xml`.
+     `pom.xml` — it is **not currently present** in `catalog-service/pom.xml`.
    - Architecture-accepted alternative: `Uni<T>` operators (`.chain()`, `.onFailure()`) without
      Vavr.
    - **The decision on which of the two to standardize on is not yet formalized — do not mix both

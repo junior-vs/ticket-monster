@@ -1,18 +1,18 @@
 # Implementation Plan: US-CAT-10 - Gerenciar Venue e Section
 
-**Branch**: `010-gerenciar-locais-secoes` | **Date**: 2026-08-06 | **Spec**: `microservice-catalog/specs/010-gerenciar-locais-secoes/spec.md`
+**Branch**: `010-gerenciar-locais-secoes` | **Date**: 2026-08-06 | **Spec**: `catalog-service/specs/010-gerenciar-locais-secoes/spec.md`
 
-**Input**: Feature specification from `microservice-catalog/specs/010-gerenciar-locais-secoes/spec.md`
+**Input**: Feature specification from `catalog-service/specs/010-gerenciar-locais-secoes/spec.md`
 
 ## Summary
 
-Implementar CRUD administrativo e leitura pública para `Venue` e `Section` no `microservice-catalog`, preservando RN07, RN11 e RN12 diretamente nas invariantes de domínio e nas constraints PostgreSQL já aplicadas. `Section.capacity` permanece somente leitura e derivada pelo banco via coluna gerada; payloads de escrita não aceitam nem propagam `capacity`.
+Implementar CRUD administrativo e leitura pública para `Venue` e `Section` no `catalog-service`, preservando RN07, RN11 e RN12 diretamente nas invariantes de domínio e nas constraints PostgreSQL já aplicadas. `Section.capacity` permanece somente leitura e derivada pelo banco via coluna gerada; payloads de escrita não aceitam nem propagam `capacity`.
 
 A implementação **segue estritamente a convenção arquitetural já estabelecida e em produção pela feature 009 (`event-categories`)**: pacotes planos por camada dentro de `br.vsjr.labs.ticketmonster.catalog` (não pacotes por agregado). `VenueEntity`, `SectionEntity` e `VenueAddressEmbeddable` **já existem** em `catalog.domain.entity` e são reaproveitados sem alteração estrutural.
 
 ## Technical Context
 
-**Language/Version**: Java 25 conforme `microservice-catalog/pom.xml` (`maven.compiler.release=25`). A constituição define Java 21 como baseline mínimo; Java 25 é uma versão acima do baseline, já em uso pela feature 009 — mantida por consistência, não é uma decisão nova desta feature.
+**Language/Version**: Java 25 conforme `catalog-service/pom.xml` (`maven.compiler.release=25`). A constituição define Java 21 como baseline mínimo; Java 25 é uma versão acima do baseline, já em uso pela feature 009 — mantida por consistência, não é uma decisão nova desta feature.
 
 **Primary Dependencies**: Quarkus 3.37.4; `quarkus-rest`, `quarkus-rest-jackson`, `quarkus-hibernate-reactive-panache`, `quarkus-reactive-pg-client`, `quarkus-jdbc-postgresql`, `quarkus-liquibase`, `quarkus-redis-client`, `quarkus-messaging-kafka`, `quarkus-oidc`, `quarkus-opentelemetry`, `quarkus-micrometer-registry-prometheus`, `quarkus-smallrye-health`, `quarkus-smallrye-fault-tolerance`. MapStruct (`org.mapstruct`, `componentModel = "cdi"`) já configurado via `QuarkusMappingConfig` — reaproveitado, não introduzido.
 
@@ -22,7 +22,7 @@ A implementação **segue estritamente a convenção arquitetural já estabeleci
 
 **Target Platform**: Microsserviço backend Quarkus executando em container Linux/Kubernetes ou local via Docker Compose compartilhado.
 
-**Project Type**: Web service REST reativo, camadas planas por responsabilidade (não hexagonal por agregado) dentro de `microservice-catalog`.
+**Project Type**: Web service REST reativo, camadas planas por responsabilidade (não hexagonal por agregado) dentro de `catalog-service`.
 
 **Performance Goals**: Leituras públicas de catálogo p95 <= 250 ms em cache quente; escritas administrativas p95 <= 200 ms; erro 5xx em steady-state < 0,1% para esta feature.
 
@@ -45,14 +45,14 @@ Post-design re-check: PASS WITH TRACKED RISK. Os artefatos de fase 1 mantêm o g
 ## Riscos e Pré-condições de Build (não introduzidos por esta feature, mas bloqueantes)
 
 - `EventCategoryExceptionMapper` importa `catalog.adapter.out.dto.ProblemDetails`, que **não existe em nenhum lugar do repositório**. Esta feature depende do mesmo tipo (RFC 7807 compartilhado) para `VenueExceptionMapper`/`SectionExceptionMapper` — a criação de `ProblemDetails` está incluída em `tasks.md` desta feature (T0xx), pois é pré-requisito comum e atualmente ausente.
-- `EventCategoryService` implementa contra `catalog.application.port.out.EventCategoryRepositoryPort` e `EventCategoryCachePort`, que também **não existem no repositório** — o módulo `microservice-catalog` não compila no `main` atual por causa da feature 009, independentemente desta feature. Isso é um gap de outra feature (categorias de evento), fora do escopo de correção aqui. **Recomendação**: abrir ticket específico para `event-categories` antes ou em paralelo à execução desta feature, para que o CI volte a passar.
+- `EventCategoryService` implementa contra `catalog.application.port.out.EventCategoryRepositoryPort` e `EventCategoryCachePort`, que também **não existem no repositório** — o módulo `catalog-service` não compila no `main` atual por causa da feature 009, independentemente desta feature. Isso é um gap de outra feature (categorias de evento), fora do escopo de correção aqui. **Recomendação**: abrir ticket específico para `event-categories` antes ou em paralelo à execução desta feature, para que o CI volte a passar.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-microservice-catalog/specs/010-gerenciar-locais-secoes/
+catalog-service/specs/010-gerenciar-locais-secoes/
 ├── spec.md
 ├── plan.md
 ├── research.md
@@ -66,7 +66,7 @@ microservice-catalog/specs/010-gerenciar-locais-secoes/
 ### Source Code (repository root) — reaproveita a convenção real, plana por camada
 
 ```text
-microservice-catalog/
+catalog-service/
 ├── pom.xml
 ├── src/main/java/br/vsjr/labs/ticketmonster/catalog/
 │   ├── domain/

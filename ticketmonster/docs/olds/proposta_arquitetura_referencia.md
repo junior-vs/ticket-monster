@@ -25,7 +25,7 @@ flowchart TB
     MOB --> GW
 
     subgraph Services["Microsserviços (Quarkus)"]
-        CAT[microservice-catalog]
+        CAT[catalog-service]
         INV[microservice-inventory]
         BOOK[microservice-booking]
         TEL[microservice-telemetry]
