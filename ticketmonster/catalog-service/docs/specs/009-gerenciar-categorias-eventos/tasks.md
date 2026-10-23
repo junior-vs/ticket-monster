@@ -27,13 +27,13 @@
 
 **⚠️ CRITICAL**: No user story implementation can begin until this phase is complete
 
-- [ ] T003 Create Liquibase migration for `catalog.event_category` constraints (`UNIQUE` normalized + `btrim()` check) in `microservice-catalog/src/main/resources/db/migration/V1.0.1__event_category_description_constraints.sql` and include it in `db/changelog/db.changelog-master.xml`
-- [ ] T004 [P] Create domain model `EventCategory` with validation and normalization support in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/model/EventCategory.java` (with rules enforced by `EventCategoryDescription`)
-- [ ] T005 [P] Create domain exceptions (`EventCategoryAlreadyExistsException`, `EventCategoryNotFoundException`, `EventCategoryInUseException`) in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/exception/`
-- [ ] T006 [P] Create JPA entity `EventCategoryEntity` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/entity/EventCategoryEntity.java`
-- [ ] T007 Create Panache reactive repository adapter `EventCategoryRepository` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/repository/EventCategoryRepository.java`
-- [ ] T008 [P] Create Redis cache adapter `EventCategoryRedisCacheAdapter` for invalidation and retrieval under key `catalog:categories:list` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/cache/EventCategoryRedisCacheAdapter.java`
-- [ ] T009 Create RFC 7807 Problem Details exception mapper `EventCategoryExceptionMapper` in `../../src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/mapper`
+- [x] T003 Create Liquibase migration for `catalog.event_category` constraints (`UNIQUE` normalized + `btrim()` check) in `microservice-catalog/src/main/resources/db/migration/V1.0.1__event_category_description_constraints.sql` and include it in `db/changelog/db.changelog-master.xml`
+- [x] T004 [P] Create domain model `EventCategory` with validation and normalization support in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/model/EventCategory.java` (with rules enforced by `EventCategoryDescription`)
+- [x] T005 [P] Create domain exceptions (`EventCategoryAlreadyExistsException`, `EventCategoryNotFoundException`, `EventCategoryInUseException`) in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/exception/`
+- [x] T006 [P] Create JPA entity `EventCategoryEntity` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/domain/entity/EventCategoryEntity.java`
+- [x] T007 Create Panache reactive repository adapter `EventCategoryRepository` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/repository/EventCategoryRepository.java`
+- [x] T008 [P] Create Redis cache adapter `EventCategoryRedisCacheAdapter` for invalidation and retrieval under key `catalog:categories:list` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/cache/EventCategoryRedisCacheAdapter.java`
+- [x] T009 Create RFC 7807 Problem Details exception mapper `EventCategoryExceptionMapper` in `../../src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/mapper`
 
 **Checkpoint**: Foundation ready — database schema, domain invariants, repository ports, and RFC 7807 error handler complete.
 
@@ -47,15 +47,15 @@
 
 ### Tests for User Story 1 (REQUIRED) ⚠️
 
-- [ ] T010 [P] [US1] Unit test for `EventCategory` validation and `trim()` normalization in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/unit/domain/EventCategoryTest.java`
-- [ ] T011 [P] [US1] Integration test for category creation, uniqueness check (RN06, FR-002a), and RFC 7807 error responses in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java`
+- [x] T010 [P] [US1] Unit test for `EventCategory` validation and `trim()` normalization in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/unit/domain/EventCategoryTest.java`
+- [x] T011 [P] [US1] Integration test for category creation, uniqueness check (RN06, FR-002a), and RFC 7807 error responses in `microservice-catalog/src/test/java/br/vsjr/labs/ticketmonster/catalog/rest/EventCategoryResourceTest.java`
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create input DTO `CreateCategoryRequest` in `in` and use `CategoryResponse` as output DTO in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/dto/`
-- [ ] T013 [P] [US1] Create use case interface `CreateCategoryUseCase` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/CreateCategoryUseCase.java`
-- [ ] T014 [US1] Implement `CreateCategoryUseCase` logic with uniqueness check and cache eviction in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
-- [ ] T015 [US1] Implement POST endpoint `/api/v1/admin/event-categories` guarded with `@RolesAllowed("ROLE_ADMIN")` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
+- [x] T012 [P] [US1] Create input DTO `CreateCategoryRequest` in `in` and use `CategoryResponse` as output DTO in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/out/dto/`
+- [x] T013 [P] [US1] Create use case interface `CreateCategoryUseCase` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/port/in/CreateCategoryUseCase.java`
+- [x] T014 [US1] Implement `CreateCategoryUseCase` logic with uniqueness check and cache eviction in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/application/usecase/EventCategoryService.java`
+- [x] T015 [US1] Implement POST endpoint `/api/v1/admin/event-categories` guarded with `@RolesAllowed("ROLE_ADMIN")` in `microservice-catalog/src/main/java/br/vsjr/labs/ticketmonster/catalog/adapter/rest/EventCategoryAdminResource.java`
 
 **Checkpoint**: At this point, User Story 1 (MVP) is fully functional and testable independently.
 
