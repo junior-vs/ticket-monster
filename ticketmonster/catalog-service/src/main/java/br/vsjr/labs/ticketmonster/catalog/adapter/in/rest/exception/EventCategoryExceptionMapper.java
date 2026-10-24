@@ -1,8 +1,5 @@
 package br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.exception;
 
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.Provider;
-
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.dto.ProblemDetails;
@@ -10,6 +7,9 @@ import br.vsjr.labs.ticketmonster.catalog.domain.exception.EventCategoryAlreadyE
 import br.vsjr.labs.ticketmonster.catalog.domain.exception.EventCategoryInUseException;
 import br.vsjr.labs.ticketmonster.catalog.domain.exception.EventCategoryInvalidDescriptionException;
 import br.vsjr.labs.ticketmonster.catalog.domain.exception.EventCategoryNotFoundException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * Traduz as excecoes de dominio de {@code EventCategory} para respostas HTTP no
@@ -31,27 +31,33 @@ public class EventCategoryExceptionMapper {
     private static final String TYPE_CONFLICT = "https://ticketmonster.com/errors/conflict";
 
     @ServerExceptionMapper
-    public Response mapInvalidDescription(EventCategoryInvalidDescriptionException ex) {
-        return problem(Response.Status.BAD_REQUEST, TYPE_VALIDATION, "Descrição Inválida", ex.getMessage());
+    public Response mapInvalidDescription(EventCategoryInvalidDescriptionException ex, UriInfo uriInfo) {
+        return problem(Response.Status.BAD_REQUEST, TYPE_VALIDATION, "Descrição Inválida", ex.getMessage(), uriInfo);
     }
 
     @ServerExceptionMapper
-    public Response mapNotFound(EventCategoryNotFoundException ex) {
-        return problem(Response.Status.NOT_FOUND, TYPE_NOT_FOUND, "Categoria Não Encontrada", ex.getMessage());
+    public Response mapNotFound(EventCategoryNotFoundException ex, UriInfo uriInfo) {
+        return problem(Response.Status.NOT_FOUND, TYPE_NOT_FOUND, "Categoria Não Encontrada", ex.getMessage(), uriInfo);
     }
 
     @ServerExceptionMapper
-    public Response mapAlreadyExists(EventCategoryAlreadyExistsException ex) {
-        return problem(Response.Status.CONFLICT, TYPE_CONFLICT, "Categoria Duplicada", ex.getMessage());
+    public Response mapAlreadyExists(EventCategoryAlreadyExistsException ex, UriInfo uriInfo) {
+        return problem(Response.Status.CONFLICT, TYPE_CONFLICT, "Categoria Duplicada", ex.getMessage(), uriInfo);
     }
 
     @ServerExceptionMapper
-    public Response mapInUse(EventCategoryInUseException ex) {
-        return problem(Response.Status.CONFLICT, TYPE_CONFLICT, "Categoria Em Uso", ex.getMessage());
+    public Response mapInUse(EventCategoryInUseException ex, UriInfo uriInfo) {
+        return problem(Response.Status.CONFLICT, TYPE_CONFLICT, "Restrição de Integridade Referencial", ex.getMessage(),
+                uriInfo);
     }
 
-    private Response problem(Response.Status status, String type, String title, String detail) {
-        ProblemDetails body = new ProblemDetails(type, title, status.getStatusCode(), detail, null);
+    private Response problem(Response.Status status, String type, String title, String detail, UriInfo uriInfo) {
+        ProblemDetails body = new ProblemDetails(type, title, status.getStatusCode(), detail, instance(uriInfo));
         return Response.status(status).type(PROBLEM_JSON).entity(body).build();
+    }
+
+    private static String instance(UriInfo uriInfo) {
+        String path = uriInfo.getPath();
+        return path.startsWith("/") ? path : "/" + path;
     }
 }

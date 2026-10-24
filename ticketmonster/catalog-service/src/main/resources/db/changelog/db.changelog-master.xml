@@ -8,4 +8,7 @@
     <include file="../migration/V1.0.1__event_category_description_constraints.sql"
              relativeToChangelogFile="true"/>
 
+    <include file="../migration/V1.0.2__event_reference_restrict.sql"
+             relativeToChangelogFile="true"/>
+
 </databaseChangeLog>

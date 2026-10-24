@@ -1,17 +1,26 @@
 package br.vsjr.labs.ticketmonster.catalog.adapter.in.rest;
 
 import java.net.URI;
+import java.util.UUID;
 
 import br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.dto.CategoryResponse;
 import br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.dto.CreateCategoryRequest;
+import br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.dto.UpdateCategoryRequest;
+import br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.mapper.EventCategoryDtoMapper;
 import br.vsjr.labs.ticketmonster.catalog.application.port.in.CreateCategoryUseCase;
+import br.vsjr.labs.ticketmonster.catalog.application.port.in.DeleteCategoryUseCase;
+import br.vsjr.labs.ticketmonster.catalog.application.port.in.UpdateCategoryUseCase;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -32,10 +41,19 @@ public class EventCategoryAdminResource {
     public static final String BASE_PATH = "/api/v1/admin/event-categories";
 
     private final CreateCategoryUseCase createCategoryUseCase;
+    private final UpdateCategoryUseCase updateCategoryUseCase;
+    private final DeleteCategoryUseCase deleteCategoryUseCase;
+    private final EventCategoryDtoMapper dtoMapper;
 
     @Inject
-    public EventCategoryAdminResource(CreateCategoryUseCase createCategoryUseCase) {
+    public EventCategoryAdminResource(CreateCategoryUseCase createCategoryUseCase,
+            UpdateCategoryUseCase updateCategoryUseCase,
+            DeleteCategoryUseCase deleteCategoryUseCase,
+            EventCategoryDtoMapper dtoMapper) {
         this.createCategoryUseCase = createCategoryUseCase;
+        this.updateCategoryUseCase = updateCategoryUseCase;
+        this.deleteCategoryUseCase = deleteCategoryUseCase;
+        this.dtoMapper = dtoMapper;
     }
 
     /**
@@ -51,11 +69,49 @@ public class EventCategoryAdminResource {
     @POST
     @RolesAllowed("ROLE_ADMIN")
     @WithTransaction
-    public Uni<Response> create(CreateCategoryRequest request) {
+    public Uni<Response> create(@Valid CreateCategoryRequest request) {
         return createCategoryUseCase.create(request.description())
                 .map(category -> Response
                         .created(URI.create(BASE_PATH + "/" + category.id()))
-                        .entity(CategoryResponse.from(category))
+                        .entity(dtoMapper.toResponse(category))
                         .build());
+    }
+
+    /**
+     * Altera a descricao de uma categoria existente.
+     *
+     * <p>FR-001 - sucesso responde {@code 200 OK} com o recurso atualizado. Erros
+     * RFC 7807: 400 descricao invalida, 404 id inexistente e 409 descricao ja
+     * utilizada por outra categoria (RN06).
+     *
+     * @param id identificador da categoria
+     * @param request corpo com a nova descricao
+     * @return resposta {@code 200 OK} com a categoria atualizada
+     */
+    @PUT
+    @Path("/{id}")
+    @RolesAllowed("ROLE_ADMIN")
+    @WithTransaction
+    public Uni<Response> update(@PathParam("id") UUID id, @Valid UpdateCategoryRequest request) {
+        return updateCategoryUseCase.update(id, request.description())
+                .map(category -> Response.ok(dtoMapper.toResponse(category)).build());
+    }
+
+    /**
+     * Exclui uma categoria sem eventos associados.
+     *
+     * <p>FR-004 - sucesso responde {@code 204 No Content}. Erros RFC 7807: 404 id
+     * inexistente e 409 categoria com eventos vinculados (RN04).
+     *
+     * @param id identificador da categoria
+     * @return resposta {@code 204 No Content}
+     */
+    @DELETE
+    @Path("/{id}")
+    @RolesAllowed("ROLE_ADMIN")
+    @WithTransaction
+    public Uni<Response> delete(@PathParam("id") UUID id) {
+        return deleteCategoryUseCase.delete(id)
+                .replaceWith(Response.noContent().build());
     }
 }

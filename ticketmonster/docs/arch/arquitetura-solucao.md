@@ -7,6 +7,7 @@ version:
     1. **Padrão da Saga (checkout):** Coreografia vs. Orquestração — resolvido em **ADR 05**.
     2. **Propagação de token entre serviços:** Token Relay vs. Token Exchange — resolvido em **ADR 06**.
     3. **Nome do evento de resultado de alocação de assentos:** `SeatsReservedEvent` vs. `SeatsAllocatedEvent` — resolvido em **ADR 07**."
+  1.3: "Inclusão do **ADR 08**: adoção da especificação Jakarta Bean Validation com a implementação de referência Hibernate Validator (`quarkus-hibernate-validator`) como camada principal de validação de entradas (DTOs/REST), mantendo o uso complementar de `java.util.Objects` e Value Objects para integridade e invariantes de domínio."
 
 ---
 
@@ -186,6 +187,7 @@ C4Context
 Todos os microsserviços compartilham o mesmo conjunto-base de extensões, garantindo consistência operacional entre times:
 
 - `quarkus-rest` + `quarkus-rest-jackson` (RESTEasy Reactive)
+- `quarkus-hibernate-validator` (Jakarta Bean Validation / Hibernate Validator — validação primária de entrada, ADR 08)
 - `quarkus-hibernate-reactive-panache` — acesso a dados não bloqueante, preservando a produtividade do JPA/Panache sem bloquear a thread do event loop (resolve o problema estrutural do legado, onde toda query JPA bloqueava a thread da requisição — ver Diagnóstico Arquitetural, item 1)
 - `quarkus-redis-client`
 - `quarkus-smallrye-reactive-messaging-kafka`
@@ -237,8 +239,12 @@ Todos os microsserviços compartilham o mesmo conjunto-base de extensões, garan
       }
       ```
 
-### Padrão de Erro (RFC 7807)
-Erros de validação e negócios seguem a especificação de *Problem Details*:
+### Padrão de Erro (RFC 7807) e Validação de Entrada (ADR 08)
+Erros de validação e negócios seguem a especificação de *Problem Details* (RFC 7807).
+
+Conforme **ADR 08**, a validação de entrada via **Jakarta Bean Validation (Hibernate Validator)** atua como a primeira linha de defesa (*fail-fast*) na borda HTTP (nos DTOs dos adaptadores REST). Quando uma violação de constraint ocorre, retorna-se HTTP 400 Bad Request estruturado.
+
+Exemplo de erro de validação de regras de negócio ou de restrições de entrada:
 ```json
 {
   "type": "https://ticketmonster.com/errors/insufficient-seats",
@@ -750,6 +756,7 @@ sequenceDiagram
 | **Domain Events** | `SeatsReservedEvent`, `BookingConfirmedEvent`, `BookingCancelledEvent` | Já usado no legado via CDI `Event<Booking>`; mantém-se o padrão, trocando apenas o transporte (CDI local → Outbox/Kafka). |
 | **Specification** | Regra "assentos contíguos suficientes na seção" | Encapsula a regra de elegibilidade de alocação como objeto testável isoladamente, separando o "o quê" da regra do "como" persistir. |
 | **Repository** | Uma interface por agregado (`BookingRepository`), implementação em `adapter-out` | Mantém a camada `domain` livre de Panache/Hibernate. |
+| **Defensive Invariants (`Objects`, VOs)** | Construtores de Value Objects, entidades e agregados (`domain`) | Protege invariantes de negócio e previne estados inválidos internamente, complementando a validação de entrada (ver ADR 08). |
 
 ### 20.2 Aplicação / Casos de Uso (Clean Architecture)
 
@@ -759,6 +766,7 @@ sequenceDiagram
 | **Ports & Adapters (Hexagonal)** | Interfaces `SeatAllocationPort`, `PricingPort` no domínio, implementadas por clients HTTP/Kafka reais | Permite trocar o transporte de comunicação com `inventory` sem tocar a regra de negócio. |
 | **CQRS** | `catalog` (modelo de leitura cacheado) e consulta/histórico em `booking` | Separa carga de leitura pesada da escrita transacional. |
 | **Result / Either (Railway-Oriented Programming)** | Toda a cadeia de validação de `CreateBookingUseCase` | Substitui o `try/catch` genérico do legado por composição explícita de sucesso/falha tipada (ver seção 13). |
+| **Bean Validation (Hibernate Validator)** | DTOs de entrada REST (`adapter-in/rest/dto`), parâmetros de rota | Camada primária de validação declarativa de entrada (fail-fast na borda, ADR 08) com mapeamento RFC 7807. |
 
 ### 20.3 Concorrência e Alocação de Assentos
 
@@ -864,6 +872,29 @@ sequenceDiagram
 * **Consequências:**
     * *Positivas:* Contrato de mensageria único e não ambíguo entre `booking`, `inventory` e `telemetry`; nomenclatura consistente com o Schema Registry (seção 19) a ser adotado no Kafka.
     * *Negativas:* Nenhuma relevante — é uma decisão de nomenclatura sem impacto arquitetural; o custo é apenas de padronização textual nos artefatos já produzidos.
+
+### ADR 08: Adoção do Jakarta Bean Validation (Hibernate Validator) como Camada Principal de Validação de Entrada
+* **Status:** Aprovado.
+* **Contexto:** No monolito legado (`projeto-legado.md`), a validação de dados de entrada era realizada de forma ad-hoc, dispersa e inconsistente, com verificações procedurais espalhadas por endpoints JAX-RS e métodos transacionais de serviço (ex.: `BookingService.createBooking` e `SectionAllocation.allocateSeats`). Isso causava duplicação de checagens manuais, mensagens de erro não padronizadas e ausência de uma primeira linha de defesa coesa (*fail-fast*). Na arquitetura reativa com Quarkus, é essencial definir uma estratégia de validação em camadas, distinguindo claramente a validação de contratos e transporte (entrada) da garantia de invariantes de regras de negócio (domínio).
+* **Alternativas consideradas:**
+    1. **Validação Manual/Procedural na Borda ou nos Use Cases:** Realizar checagens com `if` ou `Objects` manualmente em cada endpoint REST ou use case. Descartada por gerar alto volume de código boilerplate, propensão a esquecimentos e dificuldade de manutenção de respostas de erro padronizadas.
+    2. **Validação Exclusiva na Camada de Domínio (Value Objects):** Deixar toda e qualquer validação para os construtores de VOs e entidades do domínio. Descartada porque erros sintáticos básicos (campos obrigatórios nulos, strings vazias, tamanhos inválidos, formatos de e-mail) devem ser rejeitados imediatamente na borda (*fail-fast*), antes de instanciar a camada de aplicação e domínio.
+    3. **Jakarta Bean Validation (Hibernate Validator) na Entrada + Validação Defensiva Complementar:** Adotar a especificação padrão Jakarta Bean Validation com sua implementação de referência Hibernate Validator (`quarkus-hibernate-validator`) nos DTOs e parâmetros da camada de entrada (`adapter-in`), integrada nativamente ao Quarkus REST e à especificação RFC 7807 (`ProblemDetails`), combinada com checagens defensivas (`java.util.Objects`, VOs e Specifications) no domínio.
+* **Decisão:** Adotar a especificação **Jakarta Bean Validation** e a implementação de referência **Hibernate Validator** (via extensão `quarkus-hibernate-validator`) como a **camada principal de validação de entradas** (DTOs de requisição REST, parâmetros de rotas e contratos de API).
+    * A validação de entrada atua como a primeira linha de defesa (*fail-fast*), rejeitando dados sintaticamente inválidos antes de acionar a camada de aplicação ou domínio, gerando respostas de erro automáticas no padrão RFC 7807 (`ProblemDetails` com HTTP 400).
+    * Fica expressamente estabelecido o uso complementar de outras formas de validação onde apropriado:
+        * `java.util.Objects` (ex.: `Objects.requireNonNull`) para programação defensiva e pré-condições em construtores e métodos internos.
+        * *Value Objects* e *Aggregates* de domínio para garantia e proteção das invariantes semânticas de negócio (mantendo o domínio isolado de dependências e anotações do framework).
+        * *Specifications* para validação de regras de negócio contextuais e complexas (ex.: assentos contíguos livres).
+* **Consequências:**
+    * *Positivas:*
+        * Validação declarativa, legível e padronizada em todos os microsserviços do TicketMonster.
+        * Interrupção precoce (*fail-fast*) de requisições inválidas na borda HTTP com resposta RFC 7807 automática.
+        * Redução substancial de código defensivo redundante nos endpoints REST.
+        * Separação clara de responsabilidades: Bean Validation cuida da integridade sintática e restrições de entrada na borda; o Domínio assegura invariantes semânticas e consistência de negócio.
+    * *Negativas:*
+        * Adição da extensão `quarkus-hibernate-validator` como dependência padrão nos microsserviços.
+        * Exige disciplina para manter o isolamento da Clean Architecture: as anotações do Bean Validation devem residir primariamente nos DTOs e adaptadores de entrada, não poluindo as classes de domínio puras com acoplamento a frameworks.
 
 ---
 

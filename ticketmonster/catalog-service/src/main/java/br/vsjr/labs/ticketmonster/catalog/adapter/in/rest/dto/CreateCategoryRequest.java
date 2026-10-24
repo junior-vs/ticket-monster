@@ -1,5 +1,7 @@
 package br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 /**
  * Corpo da requisicao de cadastro de uma categoria de evento.
  *
@@ -13,5 +15,5 @@ package br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.dto;
  *
  * @param description descricao bruta informada pelo administrador
  */
-public record CreateCategoryRequest(String description) {
+public record CreateCategoryRequest(@NotNull(message = "A descrição da categoria é obrigatória.") String description) {
 }

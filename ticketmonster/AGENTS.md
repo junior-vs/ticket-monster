@@ -30,8 +30,10 @@ DDL; confirm whether it will be extracted into its own file under `docs/spec/`.
 - **ADR 06:** **Token Relay** (not Token Exchange) for identity propagation.
 - **ADR 07:** Allocation result event = `SeatsReservedEvent` / `SeatsReservationFailedEvent`
   (not `SeatsAllocatedEvent`).
+- **ADR 08:** **Jakarta Bean Validation (Hibernate Validator)** as primary input validation layer,
+  with programmatic/domain validation (`Objects`, VOs) used complementarily.
 
-Any code or spec that contradicts these three decisions must be flagged, not silently "corrected".
+Any code or spec that contradicts these decisions must be flagged, not silently "corrected".
 
 **Note on Java version:** the codebase already runs on **Java 25** (see section 2), diverging from
 the Java 21 recorded in the ADR 01 text. Until the ADR is updated, the standard to follow is the
@@ -56,7 +58,10 @@ one in the code: Java 25.
 - **OIDC, Quarkus Security**, **quarkus-oidc** + Keycloak — never implement manual JWT validation.
 - **quarkus-smallrye-fault-tolerance** for `@CircuitBreaker`/`@Retry`/`@Timeout`/`@Bulkhead` on
   synchronous calls between services.
-- **Java Bean Validation** 
+- **Jakarta Bean Validation / Hibernate Validator** (`quarkus-hibernate-validator`, ADR 08) as the
+  primary input validation layer on REST adapters/DTOs (producing RFC 7807 responses);
+  programmatic defensive checks (`java.util.Objects.requireNonNull`, etc.) and domain Value
+  Objects/Aggregates used complementarily for business invariants.
 - **TDD** - Always start with a test before implementation.
 - **Liquibase** for schema migration (`src/main/resources/db/changelog`).
 - **UUID (`gen_random_uuid()`, pgcrypto)** as PK on every entity — never `BIGSERIAL`
@@ -142,6 +147,8 @@ An explicit project rule — not optional:
 | Kafka consumption | Idempotent Receiver | Assuming exactly-once delivery |
 | Failure in a synchronous chain | Circuit Breaker + Retry + Timeout | Unlimited retry / no timeout |
 | Read cache | Cache-Aside | Cache with no TTL/invalidation |
+| Input validation | Jakarta Bean Validation (`@Valid`, Hibernate Validator) on DTOs (ADR 08) | Manual `if-null` clutter in resources / use cases |
+| Domain invariants | Value Objects + `java.util.Objects` + Aggregates | Relying exclusively on edge DTO validation for domain rules |
 
 ---
 
@@ -258,7 +265,8 @@ docker-compose up -d
 - [ ] Is the business rule referenced (RN/RN-NOVA) in a comment or test name?
 - [ ] Were unit tests derived from the specification, not from the implementation?
 - [ ] Is the touched domain code still testable without infrastructure (≥90% target)?
-- [ ] Was any ADR 05/06/07 decision contradicted without a recorded justification?
+- [ ] Was any ADR 05/06/07/08 decision contradicted without a recorded justification?
+- [ ] Are input DTOs validated using Jakarta Bean Validation / Hibernate Validator (ADR 08) as primary defense?
 - [ ] Does the published event follow ADR 07 naming and avoid carrying a JWT/raw PII?
 - [ ] Does a new endpoint check RBAC **and** ownership where applicable (section 8)?
 - [ ] Do local write + event publication use the Outbox (not direct publish)?

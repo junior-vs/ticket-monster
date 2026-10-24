@@ -1,7 +1,5 @@
 package br.vsjr.labs.ticketmonster.catalog.domain.exception;
 
-import java.util.UUID;
-
 /**
  * Lancada ao tentar excluir uma categoria que possui eventos associados.
  *
@@ -9,7 +7,7 @@ import java.util.UUID;
  */
 public class EventCategoryInUseException extends RuntimeException {
 
-    public EventCategoryInUseException(UUID id) {
-        super("Não é possível excluir a categoria " + id + " pois existem eventos associados a ela.");
+    public EventCategoryInUseException() {
+        super("Não é possível excluir a categoria pois existem eventos associados a ela.");
     }
 }
