@@ -767,6 +767,7 @@ sequenceDiagram
 | **CQRS** | `catalog` (modelo de leitura cacheado) e consulta/histórico em `booking` | Separa carga de leitura pesada da escrita transacional. |
 | **Result / Either (Railway-Oriented Programming)** | Toda a cadeia de validação de `CreateBookingUseCase` | Substitui o `try/catch` genérico do legado por composição explícita de sucesso/falha tipada (ver seção 13). |
 | **Bean Validation (Hibernate Validator)** | DTOs de entrada REST (`adapter-in/rest/dto`), parâmetros de rota | Camada primária de validação declarativa de entrada (fail-fast na borda, ADR 08) com mapeamento RFC 7807. |
+| **MapStruct** (`@Mapper` gerado, `componentModel = "cdi"`) | Toda conversão objeto-a-objeto: DTO REST ↔ domínio (`adapter-in/rest/mapper`), domínio ↔ entidade JPA (`adapter-out/persistence/mapper`), evento ↔ modelo interno (`adapter-out/messaging/mapper`) | Mecanismo único e obrigatório de mapeamento (ADR 09): código gerado em tempo de compilação, sem reflexão em runtime, com detecção de campos não mapeados ainda na compilação. |
 
 ### 20.3 Concorrência e Alocação de Assentos
 
@@ -895,6 +896,33 @@ sequenceDiagram
     * *Negativas:*
         * Adição da extensão `quarkus-hibernate-validator` como dependência padrão nos microsserviços.
         * Exige disciplina para manter o isolamento da Clean Architecture: as anotações do Bean Validation devem residir primariamente nos DTOs e adaptadores de entrada, não poluindo as classes de domínio puras com acoplamento a frameworks.
+
+### ADR 09: Adoção do MapStruct como Mecanismo Único e Obrigatório de Mapeamento entre Objetos
+* **Status:** Aprovado.
+* **Contexto:** As conversões entre objetos de camadas diferentes — domínio ↔ entidade JPA, agregado ↔ DTO de resposta REST, payload de mensageria ↔ modelo interno — vinham sendo feitas de duas formas concorrentes e não formalizadas: (a) **mapeamento manual**, com construtores `new X(...)` e cadeias de getters espalhados por repositórios Panache, adaptadores Redis e mapeadores de exceção; e (b) **MapStruct**, já adotado parcialmente (ex.: `EventCategoryMapper` no `catalog-service`). A ausência de uma regra única produziu sintomas concretos: código morto e duplicado (uma classe `EventCategoryDtoMapper` manual, anotada `@ApplicationScoped`, coexistindo com o `EventCategoryMapper` gerado pelo MapStruct), drift silencioso quando um campo novo passa a existir em um dos lados da conversão (o mapeamento manual simplesmente o ignora, sem erro de compilação) e conhecimento de persistência vazando para a camada `application`, que precisou de um `@Mapper` de entidade apenas para converter um resultado de consulta.
+* **Alternativas consideradas:**
+    1. **Mapeamento manual (construtores e getters):** manter o padrão atual, escrevendo explicitamente cada conversão. Descartada: gera boilerplate proporcional ao número de campos, não detecta em tempo de compilação a inclusão de um novo campo (drift silencioso), duplica a mesma lógica em cada adaptador e foi a origem do código morto observado.
+    2. **Mapeamento por reflexão genérica em runtime (`BeanUtils`, `ModelMapper`, `ObjectMapper.convertValue`):** Descartada: falha apenas em runtime (não em compilação), esconde incompatibilidades de tipo/nome, adiciona custo de reflexão e é hostil à compilação nativa do Quarkus (exigiria registro manual de reflexão no GraalVM).
+    3. **MapStruct (`@Mapper`, geração em tempo de compilação):** geração de código Java puro no `compile`, verificação de tipos pelo compilador, `componentModel = "cdi"` produzindo um bean injetável, zero reflexão em runtime e compatibilidade com native image. Escolhida.
+* **Decisão:** Adotar o **MapStruct** como o **mecanismo único e obrigatório de mapeamento objeto-a-objeto** em todos os microsserviços do TicketMonster.
+    * Toda conversão entre dois objetos de tipos distintos — **DTO REST ↔ domínio**, **agregado/entidade de domínio ↔ entidade JPA**, **entidade/domínio ↔ DTO de resposta** e **payload de mensageria ↔ modelo interno** — deve ser declarada como uma interface `@Mapper` do MapStruct, com `componentModel = "cdi"` (ou `MappingConstants.ComponentModel.JAKARTA_CDI`), de forma que a implementação seja gerada em tempo de compilação e injetada como bean CDI. A versão do MapStruct é a fixada no `pom.xml` do módulo (`org.mapstruct.version`, hoje `1.6.3`), com `mapstruct-processor` declarado em `annotationProcessorPaths` do `maven-compiler-plugin`.
+    * **Evitar** escrever conversões manuais (`new X(...)` com getters do objeto de origem) para transitar entre objetos, e **evitar** criar classes `*Mapper` manuais (`@ApplicationScoped`/`@Singleton`) que coexistam com um `@Mapper` gerado para a mesma fronteira. Preferir o uso de Mappers via mapstruct.
+    * **Localização:** um mapper por fronteira, no pacote do adaptador correspondente — `adapter/in/rest/mapper` (DTO ↔ domínio), `adapter/out/persistence/mapper` (domínio ↔ entidade JPA), `adapter/out/messaging/mapper` (evento ↔ modelo interno). Mappers **nunca** residem em `domain`.
+    * **Pureza do domínio preservada:** a conversão para o domínio deve respeitar o encapsulamento do agregado, usando suas fábricas (`create`/`reconstitute`) e Value Objects. Como agregados de domínio não expõem getters no estilo JavaBean, os mapeamentos de domínio usam `expression = "java(...)"` explícita (padrão já adotado em `EventCategoryMapper`).
+    * **Escopo da obrigatoriedade — casos fora dela (por não serem mapeamento objeto-a-objeto):**
+        * Fábricas e construtores internos do domínio (`EventCategory.create`/`reconstitute`, `EventCategoryDescription.of`): são criação de objeto com invariantes, não conversão entre dois objetos.
+        * Serialização/desserialização de formato em trânsito (JSON no Redis, wire format do Kafka): é responsabilidade do cliente de protocolo (ex.: Vert.x `JsonObject`), não de um mapper de beans.
+        * Extração trivial de um único valor de um DTO para um parâmetro de método (ex.: `request.description()`).
+    * **Qualidade:** classes geradas (`*MapperImpl`) não devem ser editadas nem versionadas; o `@Mapper` é a fonte de verdade e o único artefato revisável.
+* **Consequências:**
+    * *Positivas:*
+        * Eliminação do boilerplate de mapeamento e do drift silencioso: incluir um campo novo passa a gerar **erro de compilação** até que o mapeamento seja definido, em vez de falhar discretamente em runtime.
+        * Convergência de comportamento entre serviços, já que a regra de conversão passa a ser gerada e uniforme.
+        * Custo zero de reflexão em runtime, com suporte a compilação nativa compatível com o perfil `native` já existente.
+        * Redução do risco de vazamento de camadas: um `@Mapper` de persistência substitui a necessidade de `application` conhecer entidades JPA.
+    * *Negativas:*
+        * Acoplamento ao pipeline de annotation processing: o `mapstruct-processor` precisa estar corretamente declarado em `annotationProcessorPaths`, e o build deve ser validado via Maven — compiladores de IDE (Eclipse JDT/ECJ) podem recompilar as fontes geradas em `target/generated-sources/annotations` para `target/classes` e sobrescrever a implementação válida por um *stub* com erros, quebrando a descoberta de beans CDI. O build via `./mvnw` é a referência.
+        * Curva de aprendizado sobre as particularidades do MapStruct (acessores fora do padrão JavaBean exigem `expression`; agregados com construtor privado exigem fábrica/VOs no mapeamento).
 
 ---
 

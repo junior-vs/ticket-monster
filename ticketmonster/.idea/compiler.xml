@@ -14,6 +14,7 @@
         <option name="mapstruct.defaultComponentModel" value="cdi" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
         </processorPath>
         <module name="catalog-service" />
       </profile>

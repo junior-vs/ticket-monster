@@ -47,6 +47,7 @@ public class EventCategoryService
     public EventCategoryService(EventCategoryRepositoryPort repositoryPort,
             EventRepositoryPort eventRepositoryPort,
             EventCategoryCachePort cachePort) {
+
         this.repositoryPort = repositoryPort;
         this.eventRepositoryPort = eventRepositoryPort;
         this.cachePort = cachePort;
@@ -107,6 +108,16 @@ public class EventCategoryService
                 .chain(cached -> cached.isPresent()
                         ? Uni.createFrom().item(cached.get())
                         : loadFromRepository());
+    }
+
+    @Override
+    public Uni<EventCategory> getByDescription(String description) {
+        return repositoryPort.existsByDescription(description) //
+                .chain(exists -> Boolean.TRUE.equals(exists)
+                        ? repositoryPort.findByDescription(description)
+                                .map(found -> found.orElseThrow(
+                                        () -> new EventCategoryNotFoundException(description)))
+                        : Uni.createFrom().failure(new EventCategoryNotFoundException(description)));
     }
 
     private Uni<List<EventCategory>> loadFromRepository() {

@@ -17,6 +17,7 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
+        <quarkus-mapstruct.version>1.1.0</quarkus-mapstruct.version>
     </properties>
 
     <dependencyManagement>
@@ -42,6 +43,11 @@
             <artifactId>mapstruct-processor</artifactId>
             <version>${org.mapstruct.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.mapstruct</groupId>
+            <artifactId>quarkus-mapstruct</artifactId>
+            <version>${quarkus-mapstruct.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -139,8 +145,18 @@
                         </path>
                         <!-- other annotation processors -->
                     </annotationProcessorPaths>
+                    <!-- due to problem in maven-compiler-plugin, for verbose mode add showWarnings -->
+                    <showWarnings>true</showWarnings>
                     <compilerArgs>
-                        <arg>-Amapstruct.defaultComponentModel=cdi</arg>
+                        <arg>
+                            -Amapstruct.suppressGeneratorTimestamp=true
+                        </arg>
+                        <arg>
+                            -Amapstruct.suppressGeneratorVersionInfoComment=true
+                        </arg>
+                        <arg>
+                            -Amapstruct.verbose=true
+                        </arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

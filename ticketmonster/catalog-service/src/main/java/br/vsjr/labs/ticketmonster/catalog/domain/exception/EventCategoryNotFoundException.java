@@ -10,4 +10,8 @@ public class EventCategoryNotFoundException extends RuntimeException {
     public EventCategoryNotFoundException(UUID id) {
         super("Categoria de evento não encontrada para o id " + id + ".");
     }
+
+    public EventCategoryNotFoundException(String description) {
+        super("Categoria de evento não encontrada para a descrição " + description + ".");
+    }
 }

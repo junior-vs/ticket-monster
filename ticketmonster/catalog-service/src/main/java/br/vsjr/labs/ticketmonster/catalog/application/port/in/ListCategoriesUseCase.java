@@ -21,4 +21,6 @@ public interface ListCategoriesUseCase {
      * @return categorias em ordem ascendente de descricao
      */
     Uni<List<EventCategory>> listAll();
+
+    Uni<EventCategory> getByDescription(String description);
 }

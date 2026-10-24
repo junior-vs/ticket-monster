@@ -5,6 +5,8 @@ import java.util.Objects;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.dto.ProblemDetails;
+import br.vsjr.labs.ticketmonster.catalog.adapter.in.rest.mapper.ProblemDetailsMapper;
+import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Response;
@@ -23,6 +25,13 @@ public class ConstraintViolationExceptionMapper {
     private static final String PROBLEM_JSON = "application/problem+json";
     private static final String TYPE_VALIDATION = "https://ticketmonster.com/errors/validation";
 
+    private final ProblemDetailsMapper problemDetailsMapper;
+
+    @Inject
+    public ConstraintViolationExceptionMapper(ProblemDetailsMapper problemDetailsMapper) {
+        this.problemDetailsMapper = problemDetailsMapper;
+    }
+
     @ServerExceptionMapper
     public Response mapConstraintViolation(ConstraintViolationException ex, UriInfo uriInfo) {
         String detail = ex.getConstraintViolations().stream()
@@ -30,7 +39,7 @@ public class ConstraintViolationExceptionMapper {
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse("Requisição inválida.");
-        ProblemDetails body = new ProblemDetails(TYPE_VALIDATION, "Requisição Inválida",
+        ProblemDetails body = problemDetailsMapper.toProblemDetails(TYPE_VALIDATION, "Requisição Inválida",
                 Response.Status.BAD_REQUEST.getStatusCode(), detail, instance(uriInfo));
         return Response.status(Response.Status.BAD_REQUEST).type(PROBLEM_JSON).entity(body).build();
     }

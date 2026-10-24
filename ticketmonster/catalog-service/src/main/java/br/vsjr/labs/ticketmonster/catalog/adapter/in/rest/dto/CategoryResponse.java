@@ -11,7 +11,7 @@ import java.util.UUID;
  * {@code createdAt}).
  *
  * <p>A projecao a partir do agregado de dominio e feita por
- * {@code EventCategoryDtoMapper}.
+ * {@code EventCategoryMapper}.
  *
  * @param id          identificador UUID v4 da categoria
  * @param description descricao normalizada

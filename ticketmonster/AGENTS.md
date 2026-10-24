@@ -6,7 +6,7 @@
 > Per-service specs: `docs/spec/microservice-*.spec.md`.
 
 This file does not replace the documents above — it summarizes the **mandatory and verifiable**
-rules for generating code consistent with decisions already made (ADRs 01–07).
+rules for generating code consistent with decisions already made (ADRs 01–09).
 
 ---
 
@@ -32,6 +32,9 @@ DDL; confirm whether it will be extracted into its own file under `docs/spec/`.
   (not `SeatsAllocatedEvent`).
 - **ADR 08:** **Jakarta Bean Validation (Hibernate Validator)** as primary input validation layer,
   with programmatic/domain validation (`Objects`, VOs) used complementarily.
+- **ADR 09:** **MapStruct** is the **single, mandatory** mechanism for object-to-object mapping
+  (DTO/Response ↔ domain, domain ↔ JPA entity, event ↔ internal model). Manual mapping and
+  hand-written `*Mapper` classes are forbidden (see section 2 and the patterns table).
 
 Any code or spec that contradicts these decisions must be flagged, not silently "corrected".
 
@@ -62,6 +65,12 @@ one in the code: Java 25.
   primary input validation layer on REST adapters/DTOs (producing RFC 7807 responses);
   programmatic defensive checks (`java.util.Objects.requireNonNull`, etc.) and domain Value
   Objects/Aggregates used complementarily for business invariants.
+- **MapStruct** (`org.mapstruct:mapstruct`, version pinned via `org.mapstruct.version`, with
+  `mapstruct-processor` in `annotationProcessorPaths` of the `maven-compiler-plugin`) — the single,
+  mandatory object-to-object mapping mechanism (ADR 09). Every `@Mapper` is declared with
+  `componentModel = "cdi"` (or `MappingConstants.ComponentModel.JAKARTA_CDI`) so the generated
+  implementation is an injectable CDI bean. **Never** write manual conversions (`new X(...)` plus
+  getters) nor hand-written `*Mapper` classes for the same boundary.
 - **TDD** - Always start with a test before implementation.
 - **Liquibase** for schema migration (`src/main/resources/db/changelog`).
 - **UUID (`gen_random_uuid()`, pgcrypto)** as PK on every entity — never `BIGSERIAL`
@@ -80,11 +89,16 @@ br.vsjr.labs.ticketmoster.<service>
 ├── adapter/
 │   ├── in/
 │   │   ├── rest/        # JAX-RS Resources
+│   │   │   └── mapper/   # MapStruct: DTO/Response <-> domain (ADR 09)
 │   │   └── messaging/    # Kafka Consumers
+│   │       └── mapper/   # MapStruct: event payload <-> internal model (ADR 09)
 │   ├── out/
 │   │   ├── persistence/  # Panache Repositories (implement Ports)
+│   │   │   ├── entity/   # JPA entities (infrastructure only)
+│   │   │   └── mapper/   # MapStruct: domain <-> JPA entity (ADR 09)
 │   │   ├── redis/        # Redis Client (implements Ports)
 │   │   └── messaging/     # Kafka Publisher (implements Ports)
+│   │       └── mapper/   # MapStruct: internal model <-> event payload (ADR 09)
 ├── application/
 │   ├── usecase/          # Use Cases / Application Services (one class per operation)
 │   └── port/              # Outbound interfaces (implemented in adapter/out)
@@ -103,6 +117,9 @@ item 2 and section 4.1.
 
 If an agent is tempted to put business logic inside a REST `Resource` or a Panache Repository,
 that's a sign of the wrong layer — move it to `application/usecase` or `domain`.
+
+**Mapping rule (ADR 09):** `@Mapper` interfaces live in the adapter's `mapper/` package — never in
+`domain`. `domain` has no knowledge of DTOs, JPA entities, or MapStruct.
 
 ---
 
@@ -148,6 +165,7 @@ An explicit project rule — not optional:
 | Failure in a synchronous chain | Circuit Breaker + Retry + Timeout | Unlimited retry / no timeout |
 | Read cache | Cache-Aside | Cache with no TTL/invalidation |
 | Input validation | Jakarta Bean Validation (`@Valid`, Hibernate Validator) on DTOs (ADR 08) | Manual `if-null` clutter in resources / use cases |
+| Object-to-object conversion | MapStruct `@Mapper(componentModel = "cdi")` (ADR 09) | Manual `new X(...)` + getters; hand-written `*Mapper` classes |
 | Domain invariants | Value Objects + `java.util.Objects` + Aggregates | Relying exclusively on edge DTO validation for domain rules |
 
 ---
@@ -265,8 +283,9 @@ docker-compose up -d
 - [ ] Is the business rule referenced (RN/RN-NOVA) in a comment or test name?
 - [ ] Were unit tests derived from the specification, not from the implementation?
 - [ ] Is the touched domain code still testable without infrastructure (≥90% target)?
-- [ ] Was any ADR 05/06/07/08 decision contradicted without a recorded justification?
+- [ ] Was any ADR 05/06/07/08/09 decision contradicted without a recorded justification?
 - [ ] Are input DTOs validated using Jakarta Bean Validation / Hibernate Validator (ADR 08) as primary defense?
+- [ ] Does every object-to-object conversion use a MapStruct `@Mapper` (ADR 09), with no manual `new X(...)` + getters and no hand-written `*Mapper` classes?
 - [ ] Does the published event follow ADR 07 naming and avoid carrying a JWT/raw PII?
 - [ ] Does a new endpoint check RBAC **and** ownership where applicable (section 8)?
 - [ ] Do local write + event publication use the Outbox (not direct publish)?
@@ -288,6 +307,9 @@ See `projeto-legado.md` section 3 (Architectural Diagnosis) for details on each:
    and ownership checks (`projeto-legado.md` section 14, `arquitetura-solucao.md` section 25.2).
 6. Fixed, unvalidated cancellation code `"abc"` (RN29/RN30 as-is) — hash + mandatory validation
    (RN29/RN30 to-be, `microservice-booking.spec.md`).
+7. Manual object mapping (`new X(...)` plus getters) and hand-written `*Mapper` classes
+   (`@ApplicationScoped`) duplicating a generated MapStruct mapper — replaced by a MapStruct
+   `@Mapper(componentModel = "cdi")` per boundary (ADR 09).
 
 ---
 

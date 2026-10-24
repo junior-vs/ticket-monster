@@ -248,24 +248,39 @@ br.vsjr.labs.ticketmonster.catalog/
 │   │       ├── EventCategoryAdminResource.java
 │   │       ├── EventCategoryResource.java          (público)
 │   │       ├── dto/        CreateCategoryRequest, UpdateCategoryRequest, CategoryResponse
-│   │       ├── mapper/     (MapStruct: DTO <-> domínio)
-│   │       └── exception/  EventCategoryExceptionMapper
+│   │       ├── mapper/     EventCategoryMapper (MapStruct: DTO/Response <-> domínio)
+│   │       └── exception/  EventCategoryExceptionMapper, ConstraintViolationExceptionMapper
 │   └── out/
 │       ├── persistence/
-│       │   ├── EventCategoryPanacheRepository.java
-│       │   └── entity/     EventCategoryEntity (e demais entidades JPA)
+│       │   ├── repositories/ EventCategoryRepository (implementa a porta out)
+│       │   ├── entity/       EventCategoryEntity (e demais entidades JPA)
+│       │   └── mapper/       EventCategoryEntityMapper (MapStruct: domínio <-> entidade JPA)
 │       └── redis/
-│           └── CategoryRedisCacheAdapter.java
+│           └── EventCategoryRedisCacheAdapter.java
 ├── application/
 │   ├── port/
 │   │   ├── in/   Create/Update/Delete/ListCategoriesUseCase
-│   │   └── out/  CategoryRepositoryPort, CategoryCachePort
+│   │   └── out/  EventCategoryRepositoryPort, EventCategoryCachePort
 │   └── usecase/  EventCategoryService
 └── domain/
     ├── model/      EventCategory, EventCategoryId, EventCategoryDescription
     ├── vo/         PageRequest, PageResult, EventCategoryFilter
     └── exception/  EventCategoryAlreadyExists/NotFound/InUse/Invalid...
 ```
+
+**Decisão D-02 (mapeamento — ADR 09):** toda conversão objeto-a-objeto deste serviço usa
+**MapStruct** (`@Mapper(componentModel = "cdi")`), que é o mecanismo único e obrigatório
+(`docs/arch/arquitetura-solucao.md`, ADR 09). Em concreto:
+- `adapter/in/rest/mapper/EventCategoryMapper` — agregado de domínio → `CategoryResponse` (usando
+  `expression = "java(...)"`, pois o agregado não expõe getters JavaBean).
+- `adapter/out/persistence/mapper/EventCategoryEntityMapper` — domínio ↔ `EventCategoryEntity`;
+  usado **pelo repositório**, nunca pela camada `application` (a porta `out` trafega apenas tipos
+  de domínio).
+- **Proibido:** conversões manuais (`new EventCategoryEntity(...)` + getters) e classes `*Mapper`
+  escritas à mão coexistindo com um `@Mapper` gerado.
+- **Fora do escopo** (por não serem mapeamento objeto-a-objeto): fábricas de domínio
+  (`EventCategory.create/reconstitute`, `EventCategoryDescription.of`) e o wire format JSON do Redis
+  (`EventCategoryRedisCacheAdapter.serialize/deserialize`).
 
 **Decisão D-01 (nomes):** adotar os nomes que já existem no código e nos testes referenciados (`EventCategory*`, `EventCategoryInUseException`), e não os do rascunho antigo (`CategoryId`, `CategoryHasEventsException`, `EventCategoryPublicResource`). Os sufixos `Category*` ficam só nos DTOs e nas portas `out`.
 
