@@ -11,4 +11,8 @@
     <include file="../migration/V1.0.2__event_reference_restrict.sql"
              relativeToChangelogFile="true"/>
 
+    <include file="../migration/V1.0.3__catalog_dev_seed.sql"
+             relativeToChangelogFile="true"
+             context="dev,des"/>
+
 </databaseChangeLog>
