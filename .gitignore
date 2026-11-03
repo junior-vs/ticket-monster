@@ -153,3 +153,5 @@ buildNumber.properties
 .history
 .ionide
 
+.github
+.agents
